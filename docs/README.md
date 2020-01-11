@@ -33,7 +33,7 @@ ls -l
 ```
 
 # Raiders Git Quick Commands.
-Primarily we will be working with four git commands.
+Primarily we will be working with five git commands.  We'll go over branch and merge later.
 
 ## git pull ( Pull other peoples changes into my code )
 You should git pull on regular basis.  We'll go into more detail.
