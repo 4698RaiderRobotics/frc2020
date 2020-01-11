@@ -44,9 +44,11 @@ cd ~/frc2020
 git pull
 ## git status (What has changed on my local system)
 ```
+## git status
+You will get a list of files and directories that have changed.  Read the messages printed; it's actually quite smart.
+```
 git status
 ```
-You will get a list of files and directories that have changed.  Read the messages printed; it's actually quite smart.
 
 ## git add  ( Add my code changes to a commit unit)
 
