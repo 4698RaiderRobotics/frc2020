@@ -68,7 +68,7 @@ git commit -m 'write a message for posterity ( or at least something that descri
 ```
 
 Now read the messages printed out on the screen.  Again it's very informative.
-```
+
 ## git push ( push my commit for the world to see)
 
 After you've done your "git commit" command it's time to push to the world.
