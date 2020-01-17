@@ -66,6 +66,8 @@ class Robot : public frc::IterativeRobot {
   void EncoderVelocity();
   void LimeLight(char Item);
   void ColorSensor();
+  frc2::Command* GetAutonomousCommand();
+
   
   //AHRS *ahrs = new AHRS(SPI::Port::kMXP);
   
@@ -121,7 +123,20 @@ class Robot : public frc::IterativeRobot {
   double rightVelocity;
   double leftVelocity;
 
-  //Kinematics and Odometry
-  frc::DifferentialDriveKinematics kinematics{27.25_in};
-  frc::DifferentialDriveOdometry m_odometry{ahrs->GetAngleAdjustment,frc::Pose2d{5_m, 13.5_m, 0_rad}};
+  //Trajectory stuff
+  frc2::Command* m_autonomousCommand = nullptr;
+  
+const frc::DifferentialDriveKinematics DriveConstants::kDriveKinematics(0.6858_m);
+  frc::DifferentialDriveOdometry m_odometry;
+  
+  constexpr double kRamseteB = 2;
+  constexpr double kRamseteZeta = 0.7;
+  
+  constexpr kMaxSpeed = 3_mps;
+  constexpr kMaxAcceleration = 3_mps_sq;
+  
+  constexpr ks = 0.22_V;
+  constexpr kv = 1.98 * 1_V * 1_s / 1_m;
+  constexpr ka = 0.2 * 1_V * 1_s * 1_s / 1_m;
+  
 };
