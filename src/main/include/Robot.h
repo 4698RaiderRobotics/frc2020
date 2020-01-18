@@ -32,7 +32,7 @@
 
 
 class Robot : public frc::IterativeRobot {
-  static const int leftMotor1Lead = 1, leftMotor2 = 2, leftMotor3 = 3, rightMotor13Lead = 13, rightMotor12 = 12, rightMotor14 = 14;
+  static const int leftMotor1Lead = 1, leftMotor2 = 2, leftMotor3 = 3, rightMotor13Lead = 13, rightMotor12 = 12, rightMotor14 = 14, testMotor = 4;
   rev::CANSparkMax m_leftMotor1Lead{leftMotor1Lead, rev::CANSparkMax::MotorType::kBrushless};
   rev::CANSparkMax m_rightMotor13Lead{rightMotor13Lead, rev::CANSparkMax::MotorType::kBrushless};
   rev::CANSparkMax m_leftMotor2{leftMotor2, rev::CANSparkMax::MotorType::kBrushless};
@@ -45,13 +45,18 @@ class Robot : public frc::IterativeRobot {
 
   frc::DifferentialDrive m_robotDrive{m_leftMotor1Lead, m_rightMotor13Lead};
 
-  //frc::Rotation2d gyroAngle{units::degree_t(-m_gyro.GetAngle())};
-
-  //frc::Joystick m_driveStick{0};
   frc::XboxController driver{1};
 
   frc::DoubleSolenoid *shift;
-  AHRS *ahrs;
+
+  //test motor
+  rev::CANSparkMax m_testMotor{testMotor, rev::CANSparkMax::MotorType::kBrushless};
+  rev::CANPIDController m_testpidController = m_testMotor.GetPIDController();
+  rev::CANEncoder m_testEncoder = m_testMotor.GetEncoder();
+
+  double kP = 6e-5, kI = 1e-6, kD = 0, kIz = 0, kFF = 0.000015, kMaxOutput = 1.0, kMinOutput = -1.0;
+
+  const double testMaxRPM = 5700;
 
  public:
   void RobotInit() override;
@@ -66,32 +71,12 @@ class Robot : public frc::IterativeRobot {
   void EncoderVelocity();
   void LimeLight(char Item);
   void ColorSensor();
-  
-  //AHRS *ahrs = new AHRS(SPI::Port::kMXP);
-  
-  Robot(){
-    try {
-              /* Communicate w/navX-MXP via the MXP SPI Bus.                                       */
-              /* Alternatively:  I2C::Port::kMXP, SerialPort::Port::kMXP or SerialPort::Port::kUSB */
-              /* See http://navx-mxp.kauailabs.com/guidance/selecting-an-interface/ for details.   */
-      ahrs = new AHRS(SPI::Port::kMXP);
-    } catch (std::exception ex ) {
-      std::string err_string = "Error instantiating navX-MXP:  ";
-      err_string += ex.what();
-      //DriverStation::ReportError(err_string.c_str());
-    }
-  }
     
-
  private:
   frc::SendableChooser<std::string> m_chooser;
   const std::string kAutoNameDefault = "Default";
   const std::string kAutoNameCustom = "My Auto";
   std::string m_autoSelected;
-
-  
-
-
 
   frc2::PIDController pid{1.0, 0.0, 0.0};
 
@@ -108,20 +93,12 @@ class Robot : public frc::IterativeRobot {
   bool shiftUp;
   bool shiftDown;
 
-  //Limelight and Autotargeting
-  std::shared_ptr<NetworkTable> table = nt::NetworkTableInstance::GetDefault().GetTable("limelight"); 
-  double steeringAdjust;
-  double kF;
-  double tP;
-  bool autoAlign;
-  bool nullTarget;
-  double tCorrection;
+  bool testABtn;
+  bool testBBtn;
+  bool testXBtn;
+  bool testYBtn;
 
   //Encoder Return Values
   double rightVelocity;
   double leftVelocity;
-
-  //Kinematics and Odometry
-  frc::DifferentialDriveKinematics kinematics{27.25_in};
-  frc::DifferentialDriveOdometry m_odometry{ahrs->GetAngleAdjustment,frc::Pose2d{5_m, 13.5_m, 0_rad}};
 };
