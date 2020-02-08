@@ -75,22 +75,6 @@ void Robot::RobotInit()
   m_colorencoder.SetPositionConversionFactor(1 / 16);
   m_colorencoder.SetPosition(0);
 
-  // set shooter PID coefficients
-  m_shooterPIDcontroller.SetP(shooterkP);
-  m_shooterPIDcontroller.SetI(shooterkI);
-  m_shooterPIDcontroller.SetD(shooterkD);
-  m_shooterPIDcontroller.SetIZone(shooterkIz);
-  m_shooterPIDcontroller.SetFF(shooterkFF);
-  m_shooterPIDcontroller.SetOutputRange(shooterkMinOutput, shooterkMaxOutput);
-
-  // display shooter PID coefficients on SmartDashboard
-  frc::SmartDashboard::PutNumber("shooter P Gain", shooterkP);
-  frc::SmartDashboard::PutNumber("shooter I Gain", shooterkI);
-  frc::SmartDashboard::PutNumber("shooter D Gain", shooterkD);
-  frc::SmartDashboard::PutNumber("shooter I Zone", shooterkIz);
-  frc::SmartDashboard::PutNumber("shooter Feed Forward", shooterkFF);
-  frc::SmartDashboard::PutNumber("shooter Max Output", shooterkMaxOutput);
-  frc::SmartDashboard::PutNumber("shooter Min Output", shooterkMinOutput);
 
   //drive motors
   m_encoderleft.SetPositionConversionFactor((wpi::math::pi) / (7 * 3));
@@ -189,7 +173,6 @@ void Robot::AutonomousInit()
 }
 void Robot::AutonomousPeriodic()
 {
-  m_testMotor.Set(.1);
   double gyroAngle = ahrs->GetAngle();
   frc::SmartDashboard::PutNumber("anglething", gyroAngle);
 
@@ -248,7 +231,7 @@ void Robot::TeleopPeriodic()
     shift->Set(frc::DoubleSolenoid::Value::kForward);
     bool gear = true;
   }
-  testPIDcontroller();
+  testPIDcontroller(&operater);
   //Sets shifter to high or low gear
   if (throttle)
   {
@@ -306,11 +289,6 @@ void Robot::getInput()
   nullTarget = driver.GetRawButton(10);
 
   //test motor
-  testABtn = operater.GetAButton();
-  testBBtn = operater.GetBButton();
-  testXBtn = operater.GetXButton();
-  testYBtn = operater.GetYButton();
-  RPMstick = operater.GetY(frc::GenericHID::JoystickHand::kLeftHand);
   startbtn = operater.GetStartButton();
 
   //Color Sensor
@@ -457,135 +435,6 @@ void Robot::readColorSensor()
   frc::SmartDashboard::PutString("target to", gameData);
 }
 
-void Robot::testPIDcontroller()
-{
-  // read PID coefficients from SmartDashboard
-  double testp = frc::SmartDashboard::GetNumber("test P Gain", 0.000250);
-  double testi = frc::SmartDashboard::GetNumber("test I Gain", 0);
-  double testd = frc::SmartDashboard::GetNumber("test D Gain", .000800);
-  double testiz = frc::SmartDashboard::GetNumber("test I Zone", 0);
-  double testff = frc::SmartDashboard::GetNumber("test Feed Forward", 0.000015);
-  double testmax = frc::SmartDashboard::GetNumber("test Max Output", 0.85);
-  double testmin = frc::SmartDashboard::GetNumber("test Min Output", -0.85);
-
-  // if PID coefficients on SmartDashboard have changed, write new values to controller
-  if ((testp != testkP))
-  {
-    m_testpidController.SetP(testp);
-    testkP = testp;
-  }
-  if ((testi != testkI))
-  {
-    m_testpidController.SetI(testi * 1e-6);
-    testkI = testi;
-  }
-  if ((testd != testkD))
-  {
-    m_testpidController.SetD(testd);
-    testkD = testd;
-  }
-  //if((testiz != testkIz)) { m_testpidController.SetIZone(testiz); testkIz = testiz; }
-  if ((testff != testkFF))
-  {
-    m_testpidController.SetFF(testff);
-    testkFF = testff;
-  }
-  if ((testmax != testkMaxOutput) || (testmin != testkMinOutput))
-  {
-    m_testpidController.SetOutputRange(testmin, testmax);
-    testkMinOutput = testmin;
-    testkMaxOutput = testmax;
-  }
-
-  if (testABtn)
-  {
-    testSetPoint = 1000;
-  }
-  else if (testBBtn)
-  {
-    testSetPoint = 2000;
-  }
-  else if (testYBtn)
-  {
-    testSetPoint = 3000;
-  }
-  else if (testXBtn)
-  {
-    testSetPoint = 4000;
-  }
-  else if (-.1 > RPMstick || .1 < RPMstick)
-  {
-    testSetPoint = testMaxRPM * RPMstick;
-  }
-  else
-  {
-    m_testMotor.Set(0);
-  }
-  if (-.1 > RPMstick || .1 < RPMstick || testXBtn || testYBtn || testBBtn || testABtn)
-  {
-    if (testSetPoint >= 1000)
-    {
-      testiz = testSetPoint - 1000;
-    }
-    else
-    {
-      testiz = 0;
-    }
-    m_testpidController.SetIZone(testiz);
-    m_testpidController.SetReference(testSetPoint, rev::ControlType::kVelocity);
-  }
-  frc::SmartDashboard::PutNumber("Motor temps", m_testMotor.GetMotorTemperature());
-  frc::SmartDashboard::PutNumber("Motor temps", m_shooterMotor.GetMotorTemperature());
-  frc::SmartDashboard::PutNumber("SetPoint", testSetPoint * 1.33333);
-  frc::SmartDashboard::PutNumber("ProcessVariable", m_testEncoder.GetVelocity() * 1.333333);
-}
-void Robot::colorPIDcontroller(double colorSetPoint)
-{
-  // read PID coefficients from SmartDashboard
-  double colorp = frc::SmartDashboard::GetNumber("color P Gain", 0);
-  double colori = frc::SmartDashboard::GetNumber("color I Gain", 0);
-  double colord = frc::SmartDashboard::GetNumber("color D Gain", 0);
-  double coloriz = frc::SmartDashboard::GetNumber("color I Zone", 0);
-  double colorff = frc::SmartDashboard::GetNumber("color Feed Forward", 0);
-  double colormax = frc::SmartDashboard::GetNumber("color Max Output", 0);
-  double colormin = frc::SmartDashboard::GetNumber("color Min Output", 0);
-
-  // if PID coefficients on SmartDashboard have changed, write new values to controller
-  if ((colorp != colorkP))
-  {
-    m_colorPIDcontroller.SetP(colorp);
-    colorkP = colorp;
-  }
-  if ((colori != colorkI))
-  {
-    m_colorPIDcontroller.SetI(colori);
-    colorkI = colori;
-  }
-  if ((colord != colorkD))
-  {
-    m_colorPIDcontroller.SetD(colord);
-    colorkD = colord;
-  }
-  if ((coloriz != colorkIz))
-  {
-    m_colorPIDcontroller.SetIZone(coloriz);
-    colorkIz = coloriz;
-  }
-  if ((colorff != colorkFF))
-  {
-    m_colorPIDcontroller.SetFF(colorff);
-    colorkFF = colorff;
-  }
-  if ((colormax != colorkMaxOutput) || (colormin != colorkMinOutput))
-  {
-    colorkMinOutput = colormin;
-    colorkMaxOutput = colormax;
-  }
-  m_colorPIDcontroller.SetOutputRange(colormin, colormax);
-  m_colorPIDcontroller.SetReference(colorSetPoint, rev::ControlType::kVelocity);
-  frc::SmartDashboard::PutNumber("SetPoint", colorSetPoint);
-  frc::SmartDashboard::PutNumber("ProcessVariable", m_colorencoder.GetVelocity());
-}
 void Robot::rightPIDcontroller(double rightSetPoint)
 {
   m_rightPIDcontroller.SetOutputRange(rightkMinOutput, rightkMaxOutput);
@@ -599,54 +448,6 @@ void Robot::leftPIDcontroller(double leftSetPoint)
   m_leftPIDcontroller.SetReference(leftSetPoint, rev::ControlType::kVelocity);
   frc::SmartDashboard::PutNumber("SetPoint", leftSetPoint);
   frc::SmartDashboard::PutNumber("ProcessVariable", m_encoderleft.GetVelocity());
-}
-
-void Robot::shooterPIDcontroller(double shooterSetPoint)
-{
-  // read PID coefficients from SmartDashboard
-  double shooterp = frc::SmartDashboard::GetNumber("shooter P Gain", 0);
-  double shooteri = frc::SmartDashboard::GetNumber("shooter I Gain", 0);
-  double shooterd = frc::SmartDashboard::GetNumber("shooter D Gain", 0);
-  double shooteriz = frc::SmartDashboard::GetNumber("shooter I Zone", 0);
-  double shooterff = frc::SmartDashboard::GetNumber("shooter Feed Forward", 0);
-  double shootermax = frc::SmartDashboard::GetNumber("shooter Max Output", 0);
-  double shootermin = frc::SmartDashboard::GetNumber("shooter Min Output", 0);
-
-  // if PID coefficients on SmartDashboard have changed, write new values to controller
-  if ((shooterp != shooterkP))
-  {
-    m_shooterPIDcontroller.SetP(shooterp);
-    shooterkP = shooterp;
-  }
-  if ((shooteri != shooterkI))
-  {
-    m_shooterPIDcontroller.SetI(shooteri);
-    shooterkI = shooteri;
-  }
-  if ((shooterd != shooterkD))
-  {
-    m_shooterPIDcontroller.SetD(shooterd);
-    shooterkD = shooterd;
-  }
-  if ((shooteriz != shooterkIz))
-  {
-    m_shooterPIDcontroller.SetIZone(shooteriz);
-    shooterkIz = shooteriz;
-  }
-  if ((shooterff != shooterkFF))
-  {
-    m_shooterPIDcontroller.SetFF(shooterff);
-    shooterkFF = shooterff;
-  }
-  if ((shootermax != shooterkMaxOutput) || (shootermin != shooterkMinOutput))
-  {
-    shooterkMinOutput = shootermin;
-    shooterkMaxOutput = shootermax;
-  }
-  m_shooterPIDcontroller.SetOutputRange(shootermin, shootermax);
-  m_shooterPIDcontroller.SetReference(shooterSetPoint, rev::ControlType::kVelocity);
-  frc::SmartDashboard::PutNumber("SetPoint", shooterSetPoint);
-  frc::SmartDashboard::PutNumber("ProcessVariable", m_shooterencoder.GetVelocity());
 }
 
 void Robot::forwardDrive(double feet, double speed)

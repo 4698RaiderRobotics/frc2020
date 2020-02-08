@@ -34,6 +34,8 @@
 #include <frc/DigitalInput.h>
 #include "rev/ColorSensorV3.h"
 #include "rev/ColorMatch.h"
+#include "colorPIDcontroller.h"
+#include "shooterPIDcontroller.h"
 
 
 class Robot : public frc::IterativeRobot {
@@ -69,24 +71,10 @@ class Robot : public frc::IterativeRobot {
   frc::DoubleSolenoid *shift;
   AHRS *ahrs;
 
-  //test motor
-  rev::CANSparkMax m_testMotor{5, rev::CANSparkMax::MotorType::kBrushless};
-  rev::CANPIDController m_testpidController = m_testMotor.GetPIDController();
-  rev::CANEncoder m_testEncoder = m_testMotor.GetEncoder();  
-  double testkP = 0.000300, testkI = 1, testkD = 0, testkIz = 0, testkFF = 0.000040, testkMaxOutput = .85, testkMinOutput = -.85;
-
-  //Color Sensor Motor and Encoder
-  rev::CANSparkMax m_colorwheel{9, rev::CANSparkMax::MotorType::kBrushless};
-  rev::CANPIDController m_colorPIDcontroller = m_colorwheel.GetPIDController();
-  rev::CANEncoder m_colorencoder = m_colorwheel.GetEncoder();
-  double colorkP = 6e-5, colorkI = 1e-6, colorkD = 0, colorkIz = 0, colorkFF = 0.000015, colorkMaxOutput = 0.8, colorkMinOutput = -0.8;
+ 
 
   //Shooter Motors
   rev::CANSparkMax m_shooterMotor{4, rev::CANSparkMax::MotorType::kBrushless};
-  //rev::CANSparkMax m_shooterMotorOne{7, rev::CANSparkMax::MotorType::kBrushless};
-  rev::CANPIDController m_shooterPIDcontroller = m_shooterMotor.GetPIDController();
-  rev::CANEncoder m_shooterencoder = m_shooterMotor.GetEncoder();
-  double shooterkP = 6e-5, shooterkI = 1e-6, shooterkD = 0, shooterkIz = 0, shooterkFF = 0.000015, shooterkMaxOutput = 0.8, shooterkMinOutput = -0.8;
 
   //Color Sensor
   static constexpr auto i2cPort = frc::I2C::Port::kOnboard;
@@ -110,14 +98,11 @@ class Robot : public frc::IterativeRobot {
   void TestPeriodic() override;
   void getInput();
   double AutoTargetTurn();
-  void testPIDcontroller();
   void LimeLight(char Item);
-  void colorPIDcontroller(double colorSetPoint);
   void readColorSensor();
   void executeColorSensor();
   void rightPIDcontroller(double rightSetPoint);
   void leftPIDcontroller(double leftSetPoint);
-  void shooterPIDcontroller(double shooterSetPoint);
   void rampUpSpeed(double time, double current);
 
   //autonomous functions
@@ -148,10 +133,6 @@ class Robot : public frc::IterativeRobot {
   bool shiftDown;
 
   //Color Sensor
-  bool testABtn;
-  bool testBBtn;
-  bool testXBtn;
-  bool testYBtn;
   bool startbtn;
   bool position;
   bool rotationControl;
@@ -175,9 +156,6 @@ class Robot : public frc::IterativeRobot {
   double tCorrection;
   double targetDist;
 
-  //test motor PID
-  double testMaxRPM = 5700;
-  double RPMstick;
-  double testSetPoint;
+
 
 };
