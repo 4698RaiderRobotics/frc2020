@@ -24,7 +24,6 @@
 #include <frc/kinematics/DifferentialDriveKinematics.h>
 #include <frc/kinematics/DifferentialDriveOdometry.h>
 #include "WPILibVersion.h"
-#include <frc/SPI.h>
 #include "AHRS.h"
 #include <frc/controller/PIDController.h>
 #include <units/units.h>

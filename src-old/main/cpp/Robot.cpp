@@ -8,7 +8,7 @@
 #include "Robot.h"
 
 void Robot::RobotInit() {
-  // drive motors
+  //drive motors
   m_leftMotor1Lead.RestoreFactoryDefaults();
   m_rightMotor13Lead.RestoreFactoryDefaults();
   m_leftMotor2.RestoreFactoryDefaults();
@@ -21,17 +21,19 @@ void Robot::RobotInit() {
   m_rightMotor12.Follow(m_rightMotor13Lead);
   m_rightMotor14.Follow(m_rightMotor13Lead);
 
-  shift = new frc::DoubleSolenoid(1, 0);
-  ahrs = new AHRS(frc::SPI::Port::kMXP);
 
-  // test motor
+
+  shift = new frc::DoubleSolenoid(1, 0);
+  ahrs = new AHRS(SPI::Port::kMXP);
+
+  //test motor
   m_testMotor.RestoreFactoryDefaults();
   m_shooterMotor.Follow(m_testMotor, true);
   m_testMotor.SetInverted(true);
 
   // set test PID coefficients
   m_testpidController.SetP(testkP);
-  m_testpidController.SetI(testkI * 1e-6);
+  m_testpidController.SetI(testkI*1e-6);
   m_testpidController.SetD(testkD);
   m_testpidController.SetIZone(testkIz);
   m_testpidController.SetFF(testkFF);
@@ -53,7 +55,7 @@ void Robot::RobotInit() {
   m_colorPIDcontroller.SetIZone(colorkIz);
   m_colorPIDcontroller.SetFF(colorkFF);
   m_colorPIDcontroller.SetOutputRange(colorkMinOutput, colorkMaxOutput);
-
+  
   // display color PID coefficients on SmartDashboard
   frc::SmartDashboard::PutNumber("color P Gain", colorkP);
   frc::SmartDashboard::PutNumber("color I Gain", colorkI);
@@ -63,12 +65,12 @@ void Robot::RobotInit() {
   frc::SmartDashboard::PutNumber("color Max Output", colorkMaxOutput);
   frc::SmartDashboard::PutNumber("color Min Output", colorkMinOutput);
 
-  // Color sensor
+  //Color sensor
   m_colorMatcher.AddColorMatch(kBlueTarget);
   m_colorMatcher.AddColorMatch(kGreenTarget);
   m_colorMatcher.AddColorMatch(kRedTarget);
   m_colorMatcher.AddColorMatch(kYellowTarget);
-  // Color sensor Motor and Encoder
+  //Color sensor Motor and Encoder
   m_colorencoder.SetPositionConversionFactor(1 / 16);
   m_colorencoder.SetPosition(0);
 
@@ -79,7 +81,7 @@ void Robot::RobotInit() {
   m_shooterPIDcontroller.SetIZone(shooterkIz);
   m_shooterPIDcontroller.SetFF(shooterkFF);
   m_shooterPIDcontroller.SetOutputRange(shooterkMinOutput, shooterkMaxOutput);
-
+  
   // display shooter PID coefficients on SmartDashboard
   frc::SmartDashboard::PutNumber("shooter P Gain", shooterkP);
   frc::SmartDashboard::PutNumber("shooter I Gain", shooterkI);
@@ -89,7 +91,7 @@ void Robot::RobotInit() {
   frc::SmartDashboard::PutNumber("shooter Max Output", shooterkMaxOutput);
   frc::SmartDashboard::PutNumber("shooter Min Output", shooterkMinOutput);
 
-  // drive motors
+  //drive motors
   m_encoderleft.SetPositionConversionFactor((wpi::math::pi) / (7 * 3));
   m_encoderright.SetPositionConversionFactor((wpi::math::pi) / (7 * 3));
 }
@@ -105,15 +107,11 @@ void Robot::RobotInit() {
 void Robot::RobotPeriodic() {
   tP = frc::SmartDashboard::GetNumber("tP", -0.025);
   kF = frc::SmartDashboard::GetNumber("fP", 0.05);
-
-  double ts = nt::NetworkTableInstance::GetDefault()
-                  .GetTable("limelight")
-                  ->GetNumber("ts", 0.0);
+  
+  double ts = nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("ts",0.0);
   frc::SmartDashboard::PutNumber("ts", ts);
-  nt::NetworkTableInstance::GetDefault()
-      .GetTable("limelight")
-      ->PutNumber("ledMode", 1);
-
+  nt::NetworkTableInstance::GetDefault().GetTable("limelight")->PutNumber("ledMode",1);
+  
   // read PID coefficients from SmartDashboard
   double drivep = frc::SmartDashboard::GetNumber("drive P Gain", 0);
   double drivei = frc::SmartDashboard::GetNumber("drive I Gain", 0);
@@ -122,45 +120,16 @@ void Robot::RobotPeriodic() {
   double driveff = frc::SmartDashboard::GetNumber("drive Feed Forward", 0);
   double drivemax = frc::SmartDashboard::GetNumber("drive Max Output", 0);
   double drivemin = frc::SmartDashboard::GetNumber("drive Min Output", 0);
+ 
+  // if PID coefficients on SmartDashboard have changed, write new values to controller
+  if((drivep != leftkP)) {m_leftPIDcontroller.SetP(drivep); m_rightPIDcontroller.SetP(drivep); leftkP = drivep; rightkP = drivep;}
+  if((drivei != leftkI)) {m_leftPIDcontroller.SetP(drivei); m_rightPIDcontroller.SetP(drivei); leftkI = drivei; rightkI = drivei;}
+  if((drived != leftkD)) {m_leftPIDcontroller.SetP(drived); m_rightPIDcontroller.SetP(drived); leftkD = drived; rightkD = drived;}
+  if((driveiz != leftkIz)) {m_leftPIDcontroller.SetP(driveiz); m_rightPIDcontroller.SetP(driveiz); leftkIz = driveiz; rightkIz = driveiz;}
+  if((driveff != leftkFF)) {m_leftPIDcontroller.SetP(driveff); m_rightPIDcontroller.SetP(driveff); leftkFF = driveff; rightkFF = driveff;}
 
-  // if PID coefficients on SmartDashboard have changed, write new values to
-  // controller
-  if ((drivep != leftkP)) {
-    m_leftPIDcontroller.SetP(drivep);
-    m_rightPIDcontroller.SetP(drivep);
-    leftkP = drivep;
-    rightkP = drivep;
-  }
-  if ((drivei != leftkI)) {
-    m_leftPIDcontroller.SetP(drivei);
-    m_rightPIDcontroller.SetP(drivei);
-    leftkI = drivei;
-    rightkI = drivei;
-  }
-  if ((drived != leftkD)) {
-    m_leftPIDcontroller.SetP(drived);
-    m_rightPIDcontroller.SetP(drived);
-    leftkD = drived;
-    rightkD = drived;
-  }
-  if ((driveiz != leftkIz)) {
-    m_leftPIDcontroller.SetP(driveiz);
-    m_rightPIDcontroller.SetP(driveiz);
-    leftkIz = driveiz;
-    rightkIz = driveiz;
-  }
-  if ((driveff != leftkFF)) {
-    m_leftPIDcontroller.SetP(driveff);
-    m_rightPIDcontroller.SetP(driveff);
-    leftkFF = driveff;
-    rightkFF = driveff;
-  }
-
-  if ((drivemax != leftkMaxOutput) || (drivemin != leftkMinOutput)) {
-    leftkMinOutput = drivemin;
-    leftkMaxOutput = drivemax;
-    rightkMinOutput = drivemin;
-    rightkMaxOutput = drivemax;
+  if((drivemax != leftkMaxOutput) || (drivemin != leftkMinOutput)) { 
+    leftkMinOutput = drivemin; leftkMaxOutput = drivemax; rightkMinOutput = drivemin; rightkMaxOutput = drivemax;
   }
 }
 
@@ -177,12 +146,8 @@ void Robot::RobotPeriodic() {
  */
 void Robot::AutonomousInit() {
   ahrs->Reset();
-  nt::NetworkTableInstance::GetDefault()
-      .GetTable("limelight")
-      ->PutNumber("camMode", 0);
-  nt::NetworkTableInstance::GetDefault()
-      .GetTable("limelight")
-      ->PutNumber("ledMode", 0);
+  nt::NetworkTableInstance::GetDefault().GetTable("limelight")->PutNumber("camMode",0);
+  nt::NetworkTableInstance::GetDefault().GetTable("limelight")->PutNumber("ledMode",0);
   table->PutNumber("pipeline", 4);
 }
 void Robot::AutonomousPeriodic() {
@@ -198,183 +163,171 @@ void Robot::TeleopInit() {
 
 void Robot::TeleopPeriodic() {
   getInput();
-  double ts = nt::NetworkTableInstance::GetDefault()
-                  .GetTable("limelight")
-                  ->GetNumber("ts", 0.0);
+  double ts = nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("ts",0.0);
   frc::SmartDashboard::PutNumber("ts", ts);
 
   readColorSensor();
-  if (position || rotationControl) {
+  if (position || rotationControl){
     executeColorSensor();
   }
-  if (rotationControl == false && initr == false) {
+  if (rotationControl == false && initr == false){
     colorPIDcontroller(0);
     initr = true;
     revs = 0;
   }
-  if (position == false && initp == false) {
+  if (position == false && initp == false){
     initp = true;
   }
 
   if (shiftUp) {
-    shift->Set(frc::DoubleSolenoid::Value::kReverse);
+		shift->Set(frc::DoubleSolenoid::Value::kReverse);
     bool gear = false;
-  }
-  if (shiftDown) {
-    shift->Set(frc::DoubleSolenoid::Value::kForward);
+	}
+	if (shiftDown) {
+		shift->Set(frc::DoubleSolenoid::Value::kForward);
     bool gear = true;
-  }
+	}
   testPIDcontroller();
-  // Sets shifter to high or low gear
+  //Sets shifter to high or low gear
   if (throttle) {
     throttleMultiplier = .5;
-  } else {
+  }
+  else{
     throttleMultiplier = 1;
   }
-
-  // Limelight Target Reflective Strips
-  if (autoAlign) {
-    nt::NetworkTableInstance::GetDefault()
-        .GetTable("limelight")
-        ->PutNumber("camMode", 0);
-    nt::NetworkTableInstance::GetDefault()
-        .GetTable("limelight")
-        ->PutNumber("ledMode", 0);
-    table->PutNumber("pipeline", 1);
-    tCorrection = AutoTargetTurn();
-  }
-  // Turns off Targeting
-  else {
-    nt::NetworkTableInstance::GetDefault()
-        .GetTable("limelight")
-        ->PutNumber("ledMode", 1);
-    nt::NetworkTableInstance::GetDefault()
-        .GetTable("limelight")
-        ->PutNumber("camMode", 1);
-    tCorrection = 0;
-  }
-  // Makes the throttle button half the output
+  
+  	//Limelight Target Reflective Strips
+	if(autoAlign){
+    nt::NetworkTableInstance::GetDefault().GetTable("limelight")->PutNumber("camMode",0);
+    nt::NetworkTableInstance::GetDefault().GetTable("limelight")->PutNumber("ledMode",0);
+		table->PutNumber("pipeline", 1);
+		tCorrection = AutoTargetTurn();
+	}
+	//Turns off Targeting
+	else{
+    nt::NetworkTableInstance::GetDefault().GetTable("limelight")->PutNumber("ledMode",1);
+		nt::NetworkTableInstance::GetDefault().GetTable("limelight")->PutNumber("camMode",1);
+		tCorrection = 0;
+	}
+  //Makes the throttle button half the output
   turnMultiplier = .6;
   driveMultiplier = .8;
-  m_robotDrive.ArcadeDrive(speed * throttleMultiplier * driveMultiplier,
-                           (-rotation * throttleMultiplier * turnMultiplier) +
-                               tCorrection); // Drive function
+  m_robotDrive.ArcadeDrive(speed*throttleMultiplier*driveMultiplier, (-rotation*throttleMultiplier*turnMultiplier)+tCorrection);  //Drive function
+  
 }
 
 void Robot::TestPeriodic() {}
 
 void Robot::getInput() {
-  rotation = driver.GetX(
-      frc::GenericHID::JoystickHand::kLeftHand); // setting controller x value
-                                                 // to turn value
-  // speed = m_driveStick.GetY();
-  // rotation = m_driveStick.GetX();
-  RT = driver.GetTriggerAxis(
-      frc::GenericHID::JoystickHand::kRightHand); // setting right trigger to
-                                                  // forward
-  LT = driver.GetTriggerAxis(
-      frc::GenericHID::JoystickHand::kLeftHand); // setting left trigger to
-                                                 // backward
+  rotation = driver.GetX(frc::GenericHID::JoystickHand::kLeftHand); //setting controller x value to turn value
+  //speed = m_driveStick.GetY();
+  //rotation = m_driveStick.GetX();
+  RT = driver.GetTriggerAxis(frc::GenericHID::JoystickHand::kRightHand);  //setting right trigger to forward    
+  LT = driver.GetTriggerAxis(frc::GenericHID::JoystickHand::kLeftHand);  //setting left trigger to backward    
   speed = RT - LT;
-  // throttle = m_driveStick.GetRawButton(1);  //used for halving speed
-  throttle = driver.GetRawButton(6); // right bumper throttles speed
+  //throttle = m_driveStick.GetRawButton(1);  //used for halving speed
+  throttle = driver.GetRawButton(6); //right bumper throttles speed
 
-  // shiftDown = m_driveStick.GetRawButton(2); //shift up and down buttons
-  // shiftUp = m_driveStick.GetRawButton(3);
+  //shiftDown = m_driveStick.GetRawButton(2); //shift up and down buttons
+  //shiftUp = m_driveStick.GetRawButton(3);
+
 
   shiftDown = driver.GetBButton();
   shiftUp = driver.GetAButton();
 
-  // autoAlign = m_driveStick.GetRawButton(4);
-  // nullTarget = m_driveStick.GetRawButton(5);
+
+  //autoAlign = m_driveStick.GetRawButton(4);
+  //nullTarget = m_driveStick.GetRawButton(5);
 
   autoAlign = driver.GetStartButton();
   nullTarget = driver.GetRawButton(10);
 
-  // test motor
+  //test motor
   testABtn = operater.GetAButton();
   testBBtn = operater.GetBButton();
   testXBtn = operater.GetXButton();
   testYBtn = operater.GetYButton();
   RPMstick = operater.GetY(frc::GenericHID::JoystickHand::kLeftHand);
 
-  // Color Sensor
-  // position = operater.GetAButton();   //right bumper
-  // rotationControl = operater.GetBButton();   //left bumper
+  //Color Sensor
+  //position = operater.GetAButton();   //right bumper
+  //rotationControl = operater.GetBButton();   //left bumper
 }
 
-double Robot::AutoTargetTurn() {
-  double tx = table->GetNumber("tx", 0.0);
-  ty = table->GetNumber("ty", 0.0);
+double Robot::AutoTargetTurn(){
+  double tx = table->GetNumber("tx",0.0); 
+  ty = table->GetNumber("ty",0.0); 
   targetDist = (5.5 / tan((30 + ty) * (wpi::math::pi / 180)));
   frc::SmartDashboard::PutNumber("Distance to Target", targetDist);
-  double ta = table->GetNumber("ta", 0.0);
-  double ts = table->GetNumber("ts", 0.0);
+  double ta = table->GetNumber("ta",0.0); 
+  double ts = table->GetNumber("ts",0.0);
   steeringAdjust = 0.0;
-  if (tx > 1.0) {
+  if (tx > 1.0){
     steeringAdjust = tP * tx - kF;
-  } else if (tx < -1.0) {
+  }
+  else if (tx < -1.0){
     steeringAdjust = tP * tx + kF;
   }
-  return (steeringAdjust);
+  return(steeringAdjust);
 }
 
-// color sensor
-void Robot::executeColorSensor() {
-  if (position && initp) {
+//color sensor
+void Robot::executeColorSensor(){
+  if (position && initp){
     readColorSensor();
     colorPIDcontroller(960);
-    if (gameData.length() > 0) {
-      switch (gameData[0]) {
-      case 'B':
-        if (currentColor == "Red") {
-          frc::Wait((double)0.25);
-          colorPIDcontroller(0);
-          initp = false;
-        }
+    if(gameData.length() > 0){
+      switch(gameData[0]){
+        case 'B' :
+          if(currentColor == "Red"){
+            Wait(.25);
+            colorPIDcontroller(0);
+            initp = false;
+          }
         break;
-      case 'G':
-        if (currentColor == "Yellow") {
-          frc::Wait(.25);
-          colorPIDcontroller(0);
-          initp = false;
-        }
+        case 'G' :
+          if(currentColor == "Yellow"){
+            Wait(.25);
+            colorPIDcontroller(0);
+            initp = false;
+          }
         break;
-      case 'R':
-        if (currentColor == "Blue") {
-          frc::Wait(.25);
-          colorPIDcontroller(0);
-          initp = false;
-        }
+        case 'R' :
+          if(currentColor == "Blue"){
+            Wait(.25);
+            colorPIDcontroller(0);
+            initp = false;
+          }
         break;
-      case 'Y':
-        if (currentColor == "Green") {
-          frc::Wait(.25);
-          colorPIDcontroller(0);
-          initp = false;
-        }
+        case 'Y' :
+          if(currentColor == "Green"){
+            Wait(.25);
+            colorPIDcontroller(0);
+            initp = false;
+          }
         break;
-      default:
-        colorPIDcontroller(0);
+        default :
+          colorPIDcontroller(0);
         break;
       }
     }
   }
-
-  if (rotationControl && revs <= 8) {
+  
+  if (rotationControl && revs <= 8){
     readColorSensor();
-    if (initr) {
+    if(initr){
       initColor = currentColor;
       lastColor = initColor;
       revs = 0;
       colorPIDcontroller(2500);
-      if (initColor == "Unknown") {
+      if (initColor == "Unknown"){
         initr = true;
-      } else {
+      }
+      else{
         initr = false;
       }
     }
-    if (lastColor == initColor && currentColor != initColor) {
+    if (lastColor == initColor && currentColor != initColor){
       revs += 1;
     }
     frc::SmartDashboard::PutNumber("revs", revs);
@@ -382,17 +335,16 @@ void Robot::executeColorSensor() {
     frc::SmartDashboard::PutString("currentColor", currentColor);
     frc::SmartDashboard::PutString("lastColor", lastColor);
     lastColor = currentColor;
-    if (revs > 8) {
+    if(revs > 8){
       colorPIDcontroller(0);
     }
   }
 }
-void Robot::readColorSensor() {
+void Robot::readColorSensor(){
   frc::Color detectedColor = m_colorSensor.GetColor();
   double confidence = 0.0;
-  frc::Color matchedColor =
-      m_colorMatcher.MatchClosestColor(detectedColor, confidence);
-  // gameData = frc::DriverStation::GetInstance().GetGameSpecificMessage();
+  frc::Color matchedColor = m_colorMatcher.MatchClosestColor(detectedColor, confidence);
+  //gameData = frc::DriverStation::GetInstance().GetGameSpecificMessage();
   gameData = "Y";
   if (matchedColor == kBlueTarget && confidence >= .95) {
     currentColor = "Blue";
@@ -414,7 +366,7 @@ void Robot::readColorSensor() {
   frc::SmartDashboard::PutString("target to", gameData);
 }
 
-void Robot::testPIDcontroller() {
+void Robot::testPIDcontroller(){
   // read PID coefficients from SmartDashboard
   double testp = frc::SmartDashboard::GetNumber("test P Gain", 0.000250);
   double testi = frc::SmartDashboard::GetNumber("test I Gain", 0);
@@ -424,54 +376,40 @@ void Robot::testPIDcontroller() {
   double testmax = frc::SmartDashboard::GetNumber("test Max Output", 0.85);
   double testmin = frc::SmartDashboard::GetNumber("test Min Output", -0.85);
 
-  // if PID coefficients on SmartDashboard have changed, write new values to
-  // controller
-  if ((testp != testkP)) {
-    m_testpidController.SetP(testp);
-    testkP = testp;
-  }
-  if ((testi != testkI)) {
-    m_testpidController.SetI(testi * 1e-6);
-    testkI = testi;
-  }
-  if ((testd != testkD)) {
-    m_testpidController.SetD(testd);
-    testkD = testd;
-  }
-  if ((testiz != testkIz)) {
-    m_testpidController.SetIZone(testiz);
-    testkIz = testiz;
-  }
-  if ((testff != testkFF)) {
-    m_testpidController.SetFF(testff);
-    testkFF = testff;
-  }
-  if ((testmax != testkMaxOutput) || (testmin != testkMinOutput)) {
-    m_testpidController.SetOutputRange(testmin, testmax);
-    testkMinOutput = testmin;
-    testkMaxOutput = testmax;
+  // if PID coefficients on SmartDashboard have changed, write new values to controller
+  if((testp != testkP)) { m_testpidController.SetP(testp); testkP = testp; }
+  if((testi != testkI)) { m_testpidController.SetI(testi*1e-6); testkI = testi; }
+  if((testd != testkD)) { m_testpidController.SetD(testd); testkD = testd; }
+  if((testiz != testkIz)) { m_testpidController.SetIZone(testiz); testkIz = testiz; }
+  if((testff != testkFF)) { m_testpidController.SetFF(testff); testkFF = testff; }
+  if((testmax != testkMaxOutput) || (testmin != testkMinOutput)) { 
+    m_testpidController.SetOutputRange(testmin, testmax); 
+    testkMinOutput = testmin; testkMaxOutput = testmax; 
   }
 
-  if (testABtn) {
+  if(testABtn){
     testSetPoint = 2000;
-  } else if (testBBtn) {
+  }
+  else if(testBBtn){
     testSetPoint = 3000;
-  } else if (testYBtn) {
+  }
+  else if(testYBtn){
     testSetPoint = 3500;
-  } else if (testXBtn) {
+  }
+  else if(testXBtn){
     testSetPoint = 4000;
-  } else if (-.1 > RPMstick || .1 < RPMstick) {
+  }
+  else if (-.1 > RPMstick || .1 < RPMstick){
     testSetPoint = testMaxRPM * RPMstick;
-  } else {
+  }
+  else{
     m_testMotor.Set(0);
   }
-  if (-.1 > RPMstick || .1 < RPMstick || testXBtn || testYBtn || testBBtn ||
-      testABtn) {
+  if(-.1 > RPMstick || .1 < RPMstick || testXBtn || testYBtn || testBBtn || testABtn){
     m_testpidController.SetReference(testSetPoint, rev::ControlType::kVelocity);
   }
   frc::SmartDashboard::PutNumber("SetPoint", testSetPoint * 1.33333);
-  frc::SmartDashboard::PutNumber("ProcessVariable",
-                                 m_testEncoder.GetVelocity() * 1.333333);
+  frc::SmartDashboard::PutNumber("ProcessVariable", m_testEncoder.GetVelocity() * 1.333333);
 }
 void Robot::colorPIDcontroller(double colorSetPoint) {
   // read PID coefficients from SmartDashboard
@@ -483,51 +421,31 @@ void Robot::colorPIDcontroller(double colorSetPoint) {
   double colormax = frc::SmartDashboard::GetNumber("color Max Output", 0);
   double colormin = frc::SmartDashboard::GetNumber("color Min Output", 0);
 
-  // if PID coefficients on SmartDashboard have changed, write new values to
-  // controller
-  if ((colorp != colorkP)) {
-    m_colorPIDcontroller.SetP(colorp);
-    colorkP = colorp;
+  // if PID coefficients on SmartDashboard have changed, write new values to controller
+  if((colorp != colorkP)) { m_colorPIDcontroller.SetP(colorp); colorkP = colorp; }
+  if((colori != colorkI)) { m_colorPIDcontroller.SetI(colori); colorkI = colori; }
+  if((colord != colorkD)) { m_colorPIDcontroller.SetD(colord); colorkD = colord; }
+  if((coloriz != colorkIz)) { m_colorPIDcontroller.SetIZone(coloriz); colorkIz = coloriz; }
+  if((colorff != colorkFF)) { m_colorPIDcontroller.SetFF(colorff); colorkFF = colorff; }
+  if((colormax != colorkMaxOutput) || (colormin != colorkMinOutput)) { 
+    colorkMinOutput = colormin; colorkMaxOutput = colormax;
   }
-  if ((colori != colorkI)) {
-    m_colorPIDcontroller.SetI(colori);
-    colorkI = colori;
-  }
-  if ((colord != colorkD)) {
-    m_colorPIDcontroller.SetD(colord);
-    colorkD = colord;
-  }
-  if ((coloriz != colorkIz)) {
-    m_colorPIDcontroller.SetIZone(coloriz);
-    colorkIz = coloriz;
-  }
-  if ((colorff != colorkFF)) {
-    m_colorPIDcontroller.SetFF(colorff);
-    colorkFF = colorff;
-  }
-  if ((colormax != colorkMaxOutput) || (colormin != colorkMinOutput)) {
-    colorkMinOutput = colormin;
-    colorkMaxOutput = colormax;
-  }
-  m_colorPIDcontroller.SetOutputRange(colormin, colormax);
+  m_colorPIDcontroller.SetOutputRange(colormin, colormax); 
   m_colorPIDcontroller.SetReference(colorSetPoint, rev::ControlType::kVelocity);
   frc::SmartDashboard::PutNumber("SetPoint", colorSetPoint);
-  frc::SmartDashboard::PutNumber("ProcessVariable",
-                                 m_colorencoder.GetVelocity());
+  frc::SmartDashboard::PutNumber("ProcessVariable", m_colorencoder.GetVelocity());
 }
 void Robot::rightPIDcontroller(double rightSetPoint) {
-  m_rightPIDcontroller.SetOutputRange(rightkMinOutput, rightkMaxOutput);
+  m_rightPIDcontroller.SetOutputRange(rightkMinOutput, rightkMaxOutput); 
   m_rightPIDcontroller.SetReference(rightSetPoint, rev::ControlType::kVelocity);
   frc::SmartDashboard::PutNumber("SetPoint", rightSetPoint);
-  frc::SmartDashboard::PutNumber("ProcessVariable",
-                                 m_encoderright.GetVelocity());
+  frc::SmartDashboard::PutNumber("ProcessVariable", m_encoderright.GetVelocity());
 }
 void Robot::leftPIDcontroller(double leftSetPoint) {
-  m_leftPIDcontroller.SetOutputRange(leftkMinOutput, leftkMaxOutput);
+  m_leftPIDcontroller.SetOutputRange(leftkMinOutput, leftkMaxOutput); 
   m_leftPIDcontroller.SetReference(leftSetPoint, rev::ControlType::kVelocity);
   frc::SmartDashboard::PutNumber("SetPoint", leftSetPoint);
-  frc::SmartDashboard::PutNumber("ProcessVariable",
-                                 m_encoderleft.GetVelocity());
+  frc::SmartDashboard::PutNumber("ProcessVariable", m_encoderleft.GetVelocity());
 }
 
 void Robot::shooterPIDcontroller(double shooterSetPoint) {
@@ -539,77 +457,58 @@ void Robot::shooterPIDcontroller(double shooterSetPoint) {
   double shooterff = frc::SmartDashboard::GetNumber("shooter Feed Forward", 0);
   double shootermax = frc::SmartDashboard::GetNumber("shooter Max Output", 0);
   double shootermin = frc::SmartDashboard::GetNumber("shooter Min Output", 0);
-
-  // if PID coefficients on SmartDashboard have changed, write new values to
-  // controller
-  if ((shooterp != shooterkP)) {
-    m_shooterPIDcontroller.SetP(shooterp);
-    shooterkP = shooterp;
+ 
+  // if PID coefficients on SmartDashboard have changed, write new values to controller
+  if((shooterp != shooterkP)) { m_shooterPIDcontroller.SetP(shooterp); shooterkP = shooterp; }
+  if((shooteri != shooterkI)) { m_shooterPIDcontroller.SetI(shooteri); shooterkI = shooteri; }
+  if((shooterd != shooterkD)) { m_shooterPIDcontroller.SetD(shooterd); shooterkD = shooterd; }
+  if((shooteriz != shooterkIz)) { m_shooterPIDcontroller.SetIZone(shooteriz); shooterkIz = shooteriz; }
+  if((shooterff != shooterkFF)) { m_shooterPIDcontroller.SetFF(shooterff); shooterkFF = shooterff; }
+  if((shootermax != shooterkMaxOutput) || (shootermin != shooterkMinOutput)) { 
+    shooterkMinOutput = shootermin; shooterkMaxOutput = shootermax;
   }
-  if ((shooteri != shooterkI)) {
-    m_shooterPIDcontroller.SetI(shooteri);
-    shooterkI = shooteri;
-  }
-  if ((shooterd != shooterkD)) {
-    m_shooterPIDcontroller.SetD(shooterd);
-    shooterkD = shooterd;
-  }
-  if ((shooteriz != shooterkIz)) {
-    m_shooterPIDcontroller.SetIZone(shooteriz);
-    shooterkIz = shooteriz;
-  }
-  if ((shooterff != shooterkFF)) {
-    m_shooterPIDcontroller.SetFF(shooterff);
-    shooterkFF = shooterff;
-  }
-  if ((shootermax != shooterkMaxOutput) || (shootermin != shooterkMinOutput)) {
-    shooterkMinOutput = shootermin;
-    shooterkMaxOutput = shootermax;
-  }
-  m_shooterPIDcontroller.SetOutputRange(shootermin, shootermax);
-  m_shooterPIDcontroller.SetReference(shooterSetPoint,
-                                      rev::ControlType::kVelocity);
+  m_shooterPIDcontroller.SetOutputRange(shootermin, shootermax); 
+  m_shooterPIDcontroller.SetReference(shooterSetPoint, rev::ControlType::kVelocity);
   frc::SmartDashboard::PutNumber("SetPoint", shooterSetPoint);
-  frc::SmartDashboard::PutNumber("ProcessVariable",
-                                 m_shooterencoder.GetVelocity());
+  frc::SmartDashboard::PutNumber("ProcessVariable", m_shooterencoder.GetVelocity());
 }
 
-void Robot::forwardDrive(double feet, double speed) {
+
+void Robot::forwardDrive(double feet, double speed){
   double leftRPM = (speed * 420) / (wpi::math::pi / 3);
   double rightRPM = (speed * 420) / (wpi::math::pi / 3);
-  while (m_encoderright.GetPosition() < feet ||
-         m_encoderleft.GetPosition() < feet) {
+  while(m_encoderright.GetPosition() < feet || m_encoderleft.GetPosition() < feet){
     rightPIDcontroller(rightRPM);
     leftPIDcontroller(leftRPM);
   }
 }
-void Robot::leftTurn(double turnangleleft) {
+void Robot::leftTurn(double turnangleleft){
   double initleftangle = ahrs->GetAngle();
   double goalleftangle = initleftangle - turnangleleft;
   double currentleftangle = initleftangle;
-  while (currentleftangle > goalleftangle) {
+  while(currentleftangle > goalleftangle){
     currentleftangle = ahrs->GetAngle();
     rightPIDcontroller(960);
     leftPIDcontroller(-960);
   }
-  if (currentleftangle <= goalleftangle) {
+  if (currentleftangle <= goalleftangle){
     brakeRobot();
   }
 }
-void Robot::rightTurn(double turnangleright) {
+void Robot::rightTurn(double turnangleright){
   double initrightangle = ahrs->GetAngle();
   double goalrightangle = initrightangle + turnangleright;
   double currentrightangle = initrightangle;
-  while (currentrightangle < goalrightangle) {
+  while(currentrightangle < goalrightangle){
     currentrightangle = ahrs->GetAngle();
     rightPIDcontroller(-960);
     leftPIDcontroller(960);
   }
-  if (currentrightangle >= goalrightangle) {
+  if(currentrightangle >= goalrightangle){
     brakeRobot();
   }
 }
-void Robot::brakeRobot() {
+void Robot::brakeRobot(){
   rightPIDcontroller(0);
   leftPIDcontroller(0);
 }
