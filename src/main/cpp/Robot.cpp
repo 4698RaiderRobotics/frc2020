@@ -350,7 +350,7 @@ void Robot::executeColorSensor()
       case 'B':
         if (currentColor == "Red")
         {
-          Wait(.25);
+          frc::Wait(.25);
           colorPIDcontroller(0);
           initp = false;
         }
@@ -358,7 +358,7 @@ void Robot::executeColorSensor()
       case 'G':
         if (currentColor == "Yellow")
         {
-          Wait(.25);
+          frc::Wait(.25);
           colorPIDcontroller(0);
           initp = false;
         }
@@ -366,7 +366,7 @@ void Robot::executeColorSensor()
       case 'R':
         if (currentColor == "Blue")
         {
-          Wait(.25);
+          frc::Wait(.25);
           colorPIDcontroller(0);
           initp = false;
         }
@@ -374,7 +374,7 @@ void Robot::executeColorSensor()
       case 'Y':
         if (currentColor == "Green")
         {
-          Wait(.25);
+          frc::Wait(.25);
           colorPIDcontroller(0);
           initp = false;
         }
