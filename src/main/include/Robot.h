@@ -31,6 +31,7 @@
 #include <wpi/math>
 #include <iostream>
 #include <frc/util/color.h>
+#include <frc/DigitalInput.h>
 #include "rev/ColorSensorV3.h"
 #include "rev/ColorMatch.h"
 
@@ -72,7 +73,7 @@ class Robot : public frc::IterativeRobot {
   rev::CANSparkMax m_testMotor{5, rev::CANSparkMax::MotorType::kBrushless};
   rev::CANPIDController m_testpidController = m_testMotor.GetPIDController();
   rev::CANEncoder m_testEncoder = m_testMotor.GetEncoder();  
-  double testkP = 0.000400, testkI = 0.4, testkD = 0, testkIz = 0, testkFF = 0.000015, testkMaxOutput = .85, testkMinOutput = -.85;
+  double testkP = 0.000300, testkI = 1, testkD = 0, testkIz = 0, testkFF = 0.000040, testkMaxOutput = .85, testkMinOutput = -.85;
 
   //Color Sensor Motor and Encoder
   rev::CANSparkMax m_colorwheel{9, rev::CANSparkMax::MotorType::kBrushless};
@@ -87,6 +88,7 @@ class Robot : public frc::IterativeRobot {
   rev::CANEncoder m_shooterencoder = m_shooterMotor.GetEncoder();
   double shooterkP = 6e-5, shooterkI = 1e-6, shooterkD = 0, shooterkIz = 0, shooterkFF = 0.000015, shooterkMaxOutput = 0.8, shooterkMinOutput = -0.8;
 
+  //Color Sensor
   static constexpr auto i2cPort = frc::I2C::Port::kOnboard;
   rev::ColorSensorV3 m_colorSensor{i2cPort};
   rev::ColorMatch m_colorMatcher;
@@ -94,6 +96,9 @@ class Robot : public frc::IterativeRobot {
   static constexpr frc::Color kGreenTarget = frc::Color(0.220, 0.512, 0.267);
   static constexpr frc::Color kRedTarget = frc::Color(0.324, 0.443, 0.231);
   static constexpr frc::Color kYellowTarget = frc::Color(0.280, 0.521, 0.198);
+
+  //Limit Switches
+  frc::DigitalInput testInput{0};
 
  public:
   void RobotInit() override;
@@ -113,6 +118,7 @@ class Robot : public frc::IterativeRobot {
   void rightPIDcontroller(double rightSetPoint);
   void leftPIDcontroller(double leftSetPoint);
   void shooterPIDcontroller(double shooterSetPoint);
+  void rampUpSpeed(double time, double current);
 
   //autonomous functions
   void forwardDrive(double feet, double speed);
@@ -146,6 +152,7 @@ class Robot : public frc::IterativeRobot {
   bool testBBtn;
   bool testXBtn;
   bool testYBtn;
+  bool startbtn;
   bool position;
   bool rotationControl;
   std::string gameData;
