@@ -6,7 +6,9 @@
 /*----------------------------------------------------------------------------*/
 
 // hayden was here
-
+//#define DEBUG_SWITCH1
+//#define DEBUG_SWITCH2
+//#define DEBUG_SWITCH3
 #include "Robot.h"
 
 void Robot::RobotInit()
@@ -170,26 +172,68 @@ void Robot::AutonomousInit()
   nt::NetworkTableInstance::GetDefault().GetTable("limelight")->PutNumber("camMode", 0);
   nt::NetworkTableInstance::GetDefault().GetTable("limelight")->PutNumber("ledMode", 0);
   table->PutNumber("pipeline", 4);
+
+  motorOn = 0;
+  seconddisabled = 0;
+  ballCounter = 0;
+  firstdisabled = 0;
+  thirddisabled = 0;
 }
 void Robot::AutonomousPeriodic()
-{
+{ 
+
   double gyroAngle = ahrs->GetAngle();
   frc::SmartDashboard::PutNumber("anglething", gyroAngle);
 
-  bool inputVal = testInput.Get();
-  frc::SmartDashboard::PutString("inputVal", "False");
-  if (!inputVal)
-  {
-    frc::SmartDashboard::PutString("inputVal", "False");
+  bool firstInput = firstSwitch.Get();
+  bool secondInput = secondSwitch.Get();
+  bool thirdInput = thirdSwitch.Get();
+
+  //first switch on
+  if (firstInput == 1){
+    printf("firstSwitch %u\n", firstInput);
+    motorOn = 1;
+    firstdisabled = 1;
   }
-  if (inputVal)
-  {
-    frc::SmartDashboard::PutString("inputVal", "True");
+  //second switch on
+  if (secondInput == 1 && seconddisabled == 0){
+    printf("secondSwitch %u\n", secondInput);
+    motorOn = 0;
+    seconddisabled = 1;
   }
-  else
-  {
-    frc::SmartDashboard::PutString("inputVal", "big gay");
+  //second switch released
+  if (secondInput == 0){
+    seconddisabled = 0;
   }
+
+  //third switch on
+  if (thirdInput == 1 && thirddisabled == 0){
+    printf("thirdSwitch %u\n", thirdInput);
+    thirddisabled = 1;
+  }
+  
+  //third disabled
+  if(thirdInput == 0 && thirddisabled == 1){
+    ballCounter--;
+    thirddisabled = 0;
+  }
+  
+  //first disabled
+  if (firstInput == 0 && firstdisabled == 1){
+    ballCounter++;
+    firstdisabled = 0;
+  }
+
+  
+
+  if(motorOn == 1){
+    printf("motor running\n");
+  } 
+  if(motorOn == 0){
+    printf("stop motors\n");
+  }
+
+  frc::SmartDashboard::PutNumber("ballCounter", ballCounter);
 }
 
 void Robot::TeleopInit()

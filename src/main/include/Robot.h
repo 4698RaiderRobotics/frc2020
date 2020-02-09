@@ -71,8 +71,6 @@ class Robot : public frc::IterativeRobot {
   frc::DoubleSolenoid *shift;
   AHRS *ahrs;
 
- 
-
   //Shooter Motors
   rev::CANSparkMax m_shooterMotor{4, rev::CANSparkMax::MotorType::kBrushless};
 
@@ -86,7 +84,9 @@ class Robot : public frc::IterativeRobot {
   static constexpr frc::Color kYellowTarget = frc::Color(0.280, 0.521, 0.198);
 
   //Limit Switches
-  frc::DigitalInput testInput{0};
+  frc::DigitalInput firstSwitch{0};
+  frc::DigitalInput secondSwitch{1};
+  frc::DigitalInput thirdSwitch{2};
 
  public:
   void RobotInit() override;
@@ -156,6 +156,11 @@ class Robot : public frc::IterativeRobot {
   double tCorrection;
   double targetDist;
 
-
+  //Limit Switches
+  bool motorOn;
+  double ballCounter;
+  bool firstdisabled;
+  bool seconddisabled;
+  bool thirddisabled;
 
 };
