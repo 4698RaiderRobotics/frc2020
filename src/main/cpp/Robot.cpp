@@ -5,7 +5,6 @@
 /* the project.                                                               */
 /*----------------------------------------------------------------------------*/
 
-// hayden was here
 //#define DEBUG_SWITCH1
 //#define DEBUG_SWITCH2
 //#define DEBUG_SWITCH3
@@ -73,10 +72,10 @@ void Robot::RobotInit()
   m_colorMatcher.AddColorMatch(kGreenTarget);
   m_colorMatcher.AddColorMatch(kRedTarget);
   m_colorMatcher.AddColorMatch(kYellowTarget);
+
   //Color sensor Motor and Encoder
   m_colorencoder.SetPositionConversionFactor(1 / 16);
   m_colorencoder.SetPosition(0);
-
 
   //drive motors
   m_encoderleft.SetPositionConversionFactor((wpi::math::pi) / (7 * 3));
@@ -224,8 +223,6 @@ void Robot::AutonomousPeriodic()
     firstdisabled = 0;
   }
 
-  
-
   if(motorOn == 1){
     printf("motor running\n");
   } 
@@ -234,6 +231,12 @@ void Robot::AutonomousPeriodic()
   }
 
   frc::SmartDashboard::PutNumber("ballCounter", ballCounter);
+
+  //talon motor movement
+  tsrx.Set(ControlMode::PercentOutput, 0);
+
+  //victor motor movement
+  vsrx.Set(ControlMode::PercentOutput, 0);
 }
 
 void Robot::TeleopInit()
@@ -249,7 +252,7 @@ void Robot::TeleopPeriodic()
   double ts = nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("ts", 0.0);
   frc::SmartDashboard::PutNumber("ts", ts);
 
-  readColorSensor();
+  /*readColorSensor();
   if (position || rotationControl)
   {
     executeColorSensor();
@@ -263,7 +266,7 @@ void Robot::TeleopPeriodic()
   if (position == false && initp == false)
   {
     initp = true;
-  }
+  }*/
 
   if (shiftUp)
   {
@@ -275,6 +278,25 @@ void Robot::TeleopPeriodic()
     shift->Set(frc::DoubleSolenoid::Value::kForward);
     bool gear = true;
   }
+
+  //Operator controls
+
+  //buttons for flywheel
+  if(shooterThrottle){
+    //use motor speed from limelight to shoot
+  }
+  if(!shooterThrottle){
+    //stop motors
+  }
+
+  //button to release ball to shoot
+  if(moveBall){
+    //move delivery system
+  }
+  if(!moveBall){
+    //stop delivery system
+  }
+
   testPIDcontroller(&operater);
   //Sets shifter to high or low gear
   if (throttle)
@@ -335,6 +357,12 @@ void Robot::getInput()
   //test motor
   startbtn = operater.GetStartButton();
 
+  //left bumper for operator
+  shooterThrottle = operater.GetRawButton(5);
+
+  //release ball to be shot (right bumper)
+  moveBall = operater.GetRawButton(6);
+
   //Color Sensor
   //position = operater.GetAButton();   //right bumper
   //rotationControl = operater.GetBButton();   //left bumper
@@ -360,13 +388,28 @@ double Robot::AutoTargetTurn()
   return (steeringAdjust);
 }
 
-//color sensor
+void Robot::rightPIDcontroller(double rightSetPoint)
+{
+  m_rightPIDcontroller.SetOutputRange(rightkMinOutput, rightkMaxOutput);
+  m_rightPIDcontroller.SetReference(rightSetPoint, rev::ControlType::kVelocity);
+  frc::SmartDashboard::PutNumber("SetPoint", rightSetPoint);
+  frc::SmartDashboard::PutNumber("ProcessVariable", m_encoderright.GetVelocity());
+}
+void Robot::leftPIDcontroller(double leftSetPoint)
+{
+  m_leftPIDcontroller.SetOutputRange(leftkMinOutput, leftkMaxOutput);
+  m_leftPIDcontroller.SetReference(leftSetPoint, rev::ControlType::kVelocity);
+  frc::SmartDashboard::PutNumber("SetPoint", leftSetPoint);
+  frc::SmartDashboard::PutNumber("ProcessVariable", m_encoderleft.GetVelocity());
+}
+
 void Robot::executeColorSensor()
 {
   if (position && initp)
   {
     readColorSensor();
     colorPIDcontroller(960);
+
     if (gameData.length() > 0)
     {
       switch (gameData[0])
@@ -413,6 +456,7 @@ void Robot::executeColorSensor()
   if (rotationControl && revs <= 8)
   {
     readColorSensor();
+
     if (initr)
     {
       initColor = currentColor;
@@ -442,56 +486,6 @@ void Robot::executeColorSensor()
       colorPIDcontroller(0);
     }
   }
-}
-void Robot::readColorSensor()
-{
-  frc::Color detectedColor = m_colorSensor.GetColor();
-  double confidence = 0.0;
-  frc::Color matchedColor = m_colorMatcher.MatchClosestColor(detectedColor, confidence);
-  //gameData = frc::DriverStation::GetInstance().GetGameSpecificMessage();
-  gameData = "Y";
-  if (matchedColor == kBlueTarget && confidence >= .95)
-  {
-    currentColor = "Blue";
-  }
-  else if (matchedColor == kRedTarget && confidence >= .95)
-  {
-    currentColor = "Red";
-  }
-  else if (matchedColor == kGreenTarget && confidence >= .98)
-  {
-    currentColor = "Green";
-  }
-  else if (matchedColor == kYellowTarget && confidence >= .95)
-  {
-    currentColor = "Yellow";
-  }
-  else
-  {
-    currentColor = "Unknown";
-  }
-
-  frc::SmartDashboard::PutNumber("Red", detectedColor.red);
-  frc::SmartDashboard::PutNumber("Green", detectedColor.green);
-  frc::SmartDashboard::PutNumber("Blue", detectedColor.blue);
-  frc::SmartDashboard::PutNumber("Confidence", confidence);
-  frc::SmartDashboard::PutString("Detected Color", currentColor);
-  frc::SmartDashboard::PutString("target to", gameData);
-}
-
-void Robot::rightPIDcontroller(double rightSetPoint)
-{
-  m_rightPIDcontroller.SetOutputRange(rightkMinOutput, rightkMaxOutput);
-  m_rightPIDcontroller.SetReference(rightSetPoint, rev::ControlType::kVelocity);
-  frc::SmartDashboard::PutNumber("SetPoint", rightSetPoint);
-  frc::SmartDashboard::PutNumber("ProcessVariable", m_encoderright.GetVelocity());
-}
-void Robot::leftPIDcontroller(double leftSetPoint)
-{
-  m_leftPIDcontroller.SetOutputRange(leftkMinOutput, leftkMaxOutput);
-  m_leftPIDcontroller.SetReference(leftSetPoint, rev::ControlType::kVelocity);
-  frc::SmartDashboard::PutNumber("SetPoint", leftSetPoint);
-  frc::SmartDashboard::PutNumber("ProcessVariable", m_encoderleft.GetVelocity());
 }
 
 void Robot::forwardDrive(double feet, double speed)

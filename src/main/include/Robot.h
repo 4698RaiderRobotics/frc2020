@@ -34,9 +34,10 @@
 #include <frc/DigitalInput.h>
 #include "rev/ColorSensorV3.h"
 #include "rev/ColorMatch.h"
+#include "ctre/Phoenix.h"
 #include "colorPIDcontroller.h"
 #include "shooterPIDcontroller.h"
-
+#include "readColorSensor.h"
 
 class Robot : public frc::IterativeRobot {
   //Drivetrain motors
@@ -74,19 +75,19 @@ class Robot : public frc::IterativeRobot {
   //Shooter Motors
   rev::CANSparkMax m_shooterMotor{4, rev::CANSparkMax::MotorType::kBrushless};
 
-  //Color Sensor
-  static constexpr auto i2cPort = frc::I2C::Port::kOnboard;
-  rev::ColorSensorV3 m_colorSensor{i2cPort};
-  rev::ColorMatch m_colorMatcher;
-  static constexpr frc::Color kBlueTarget = frc::Color(0.197, 0.464, 0.337);
-  static constexpr frc::Color kGreenTarget = frc::Color(0.220, 0.512, 0.267);
-  static constexpr frc::Color kRedTarget = frc::Color(0.324, 0.443, 0.231);
-  static constexpr frc::Color kYellowTarget = frc::Color(0.280, 0.521, 0.198);
+  
 
   //Limit Switches
   frc::DigitalInput firstSwitch{0};
   frc::DigitalInput secondSwitch{1};
   frc::DigitalInput thirdSwitch{2};
+
+  //declaring talon variable
+  TalonSRX tsrx = /*device ID*/{0};
+
+  //declaring victor variable
+  VictorSPX vsrx = /*device ID*/{0};
+
 
  public:
   void RobotInit() override;
@@ -99,11 +100,10 @@ class Robot : public frc::IterativeRobot {
   void getInput();
   double AutoTargetTurn();
   void LimeLight(char Item);
-  void readColorSensor();
-  void executeColorSensor();
   void rightPIDcontroller(double rightSetPoint);
   void leftPIDcontroller(double leftSetPoint);
   void rampUpSpeed(double time, double current);
+  void executeColorSensor();
 
   //autonomous functions
   void forwardDrive(double feet, double speed);
@@ -115,11 +115,11 @@ class Robot : public frc::IterativeRobot {
   frc::SendableChooser<std::string> m_chooser;
   const std::string kAutoNameDefault = "Default";
   const std::string kAutoNameCustom = "My Auto";
-  std::string m_autoSelected;
+  
 
   frc2::PIDController pid{1.0, 0.0, 0.0};
 
-  //Controls
+  //Driver Controls
   double rotation; 
   double speed;
   double RT;
@@ -132,18 +132,11 @@ class Robot : public frc::IterativeRobot {
   bool shiftUp;
   bool shiftDown;
 
-  //Color Sensor
-  bool startbtn;
-  bool position;
-  bool rotationControl;
-  std::string gameData;
-  frc::Color matchedColor;
-  std::string currentColor;
-  std::string initColor;
-  std::string lastColor;
-  int revs = 0;
-  bool initp = true;
-  bool initr = true;
+  //Operater Controls
+  bool shooterThrottle;
+  bool moveBall;
+
+  
 
   //Limelight and Autotargeting
   std::shared_ptr<NetworkTable> table = nt::NetworkTableInstance::GetDefault().GetTable("limelight"); 
