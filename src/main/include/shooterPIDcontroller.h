@@ -1,5 +1,9 @@
 #include "rev/CANSparkMax.h"
 #include <frc/smartdashboard/SmartDashboard.h>
+#include <frc/smartdashboard/SendableChooser.h>
+#include <wpi/math>
+
+std::shared_ptr<NetworkTable> table = nt::NetworkTableInstance::GetDefault().GetTable("limelight"); 
 
 //test motor
 rev::CANSparkMax m_testMotor{5, rev::CANSparkMax::MotorType::kBrushless};
@@ -7,24 +11,26 @@ rev::CANPIDController m_testpidController = m_testMotor.GetPIDController();
 rev::CANEncoder m_testEncoder = m_testMotor.GetEncoder();
 double testkP = 0.000300, testkI = 1, testkD = 0, testkIz = 0, testkFF = 0.000040, testkMaxOutput = .85, testkMinOutput = -.85;
 
+double ty = table->GetNumber("ty", 0.0);
+double targetDist = (5.5 / tan((30 + ty) * (wpi::math::pi / 180)));
 
-
-void testPIDcontroller(frc::XboxController * shooteroperater)
+void testPIDcontroller(/*frc::XboxController * shooteroperater*/)
 {
     //test motor PID
     double testMaxRPM = 5700;
-    double testSetPoint;
-    bool testABtn;
+    double distconversion = 100;
+    double testSetPoint = 2500 + (round(targetDist) * distconversion);
+    /*bool testABtn;
     bool testBBtn;
     bool testXBtn;
-    bool testYBtn;
-    double RPMstick;
+    bool testYBtn;*/
+    //double RPMstick;
     //test motor
-  testABtn = shooteroperater->GetAButton();
+  /*testABtn = shooteroperater->GetAButton();
   testBBtn = shooteroperater->GetBButton();
   testXBtn = shooteroperater->GetXButton();
   testYBtn = shooteroperater->GetYButton();
-  RPMstick = shooteroperater->GetY(frc::GenericHID::JoystickHand::kLeftHand);
+  RPMstick = shooteroperater->GetY(frc::GenericHID::JoystickHand::kLeftHand);*/
     // read PID coefficients from SmartDashboard
     double testp = frc::SmartDashboard::GetNumber("test P Gain", 0.000250);
     double testi = frc::SmartDashboard::GetNumber("test I Gain", 0);
@@ -62,7 +68,7 @@ void testPIDcontroller(frc::XboxController * shooteroperater)
         testkMinOutput = testmin;
         testkMaxOutput = testmax;
     }
-    if (testABtn)
+    /*if (testABtn)
     {
         testSetPoint = 1000;
     }
@@ -81,12 +87,12 @@ void testPIDcontroller(frc::XboxController * shooteroperater)
     else if (-.1 > RPMstick || .1 < RPMstick)
     {
         testSetPoint = testMaxRPM * RPMstick;
-    }
-    else
-    {
-        m_testMotor.Set(0);
-    }
-    if (-.1 > RPMstick || .1 < RPMstick || testXBtn || testYBtn || testBBtn || testABtn)
+    }*/
+    // else
+    // {
+    //     m_testMotor.Set(0);
+    // }
+    /*if (-.1 > RPMstick || .1 < RPMstick || testXBtn || testYBtn || testBBtn || testABtn)
     {
         if (testSetPoint >= 1000)
         {
@@ -96,9 +102,9 @@ void testPIDcontroller(frc::XboxController * shooteroperater)
         {
             testiz = 0;
         }
-        m_testpidController.SetIZone(testiz);
+        m_testpidController.SetIZone(testiz);*/
         m_testpidController.SetReference(testSetPoint, rev::ControlType::kVelocity);
-    }
+    /*}*/
     frc::SmartDashboard::PutNumber("Motor temps", m_testMotor.GetMotorTemperature());
     frc::SmartDashboard::PutNumber("SetPoint", testSetPoint);
     frc::SmartDashboard::PutNumber("ProcessVariable", m_testEncoder.GetVelocity());

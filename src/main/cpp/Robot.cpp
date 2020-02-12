@@ -284,9 +284,11 @@ void Robot::TeleopPeriodic()
   //buttons for flywheel
   if(shooterThrottle){
     //use motor speed from limelight to shoot
+    testPIDcontroller();
   }
   if(!shooterThrottle){
     //stop motors
+    m_testMotor.Set(0);
   }
 
   //button to release ball to shoot
@@ -297,7 +299,8 @@ void Robot::TeleopPeriodic()
     //stop delivery system
   }
 
-  testPIDcontroller(&operater);
+  //testPIDcontroller(&operater);
+
   //Sets shifter to high or low gear
   if (throttle)
   {
@@ -387,6 +390,12 @@ double Robot::AutoTargetTurn()
   }
   return (steeringAdjust);
 }
+
+/*double Robot::rampMotorSpeed(){
+  ty = table->GetNumber("ty", 0.0);
+  targetDist = (5.5 / tan((30 + ty) * (wpi::math::pi / 180)));
+  return(targetDist);
+}*/
 
 void Robot::rightPIDcontroller(double rightSetPoint)
 {

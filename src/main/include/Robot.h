@@ -75,8 +75,6 @@ class Robot : public frc::IterativeRobot {
   //Shooter Motors
   rev::CANSparkMax m_shooterMotor{4, rev::CANSparkMax::MotorType::kBrushless};
 
-  
-
   //Limit Switches
   frc::DigitalInput firstSwitch{0};
   frc::DigitalInput secondSwitch{1};
@@ -116,7 +114,6 @@ class Robot : public frc::IterativeRobot {
   const std::string kAutoNameDefault = "Default";
   const std::string kAutoNameCustom = "My Auto";
   
-
   frc2::PIDController pid{1.0, 0.0, 0.0};
 
   //Driver Controls
@@ -135,8 +132,6 @@ class Robot : public frc::IterativeRobot {
   //Operater Controls
   bool shooterThrottle;
   bool moveBall;
-
-  
 
   //Limelight and Autotargeting
   std::shared_ptr<NetworkTable> table = nt::NetworkTableInstance::GetDefault().GetTable("limelight"); 
