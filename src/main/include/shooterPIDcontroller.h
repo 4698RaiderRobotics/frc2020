@@ -20,6 +20,9 @@ void testPIDcontroller(/*frc::XboxController * shooteroperater*/)
     double testMaxRPM = 5700;
     double distconversion = 100;
     double testSetPoint = 2500 + (round(targetDist) * distconversion);
+
+    frc::SmartDashboard::PutNumber("distConversion", distconversion);
+
     /*bool testABtn;
     bool testBBtn;
     bool testXBtn;
