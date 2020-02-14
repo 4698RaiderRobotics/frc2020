@@ -40,6 +40,28 @@
 #include "readColorSensor.h"
 
 class Robot : public frc::IterativeRobot {
+  //frc::Rotation2d gyroAngle{units::degree_t(-m_gyro.GetAngle())};
+
+  //Contoller declaration
+  //frc::Joystick m_driveStick{0};
+  frc::XboxController driver{1};
+  frc::XboxController operater{2};
+
+  //Pnuematics Piston Declaration
+  frc::DoubleSolenoid *shift;
+  frc::DoubleSolenoid *intake;
+  frc::DoubleSolenoid *boost;
+
+  //Gyro Declaration
+  AHRS *ahrs;
+
+  //Limit Switches
+  frc::DigitalInput firstSwitch{0};
+  frc::DigitalInput secondSwitch{1};
+  frc::DigitalInput thirdSwitch{2};
+
+  //All Motors
+
   //Drivetrain motors
   static const int leftMotor1Lead = 1, leftMotor2 = 2, leftMotor3 = 3, rightMotor13Lead = 13, rightMotor12 = 12, rightMotor14 = 14;
   rev::CANSparkMax m_leftMotor1Lead{leftMotor1Lead, rev::CANSparkMax::MotorType::kBrushless};
@@ -49,7 +71,32 @@ class Robot : public frc::IterativeRobot {
   rev::CANSparkMax m_rightMotor12{rightMotor12, rev::CANSparkMax::MotorType::kBrushless};
   rev::CANSparkMax m_rightMotor14{rightMotor14, rev::CANSparkMax::MotorType::kBrushless};
 
-  //Drivetrain Encoders and motors
+  frc::DifferentialDrive m_robotDrive{m_leftMotor1Lead, m_rightMotor13Lead};
+
+  //Shooter Motors
+  rev::CANSparkMax m_shooterMotor{4, rev::CANSparkMax::MotorType::kBrushless};
+
+  //Intake Motor
+  rev::CANSparkMax m_intakemotor{10, rev::CANSparkMax::MotorType::kBrushless};
+
+  //declaring talon variables
+  TalonSRX tsrx1 = /*device ID*/{6};
+  TalonSRX tsrx2 = /*device ID*/{7};  
+
+  //declaring victor variable
+  VictorSPX vspx = /*device ID*/{8};
+
+  /*
+  Current CAN IDs
+  left drive motors 1, 2, 3
+  shooter motors 4, 5
+  climb motors 6, 7
+  Indexing 8
+  Color Wheel 9
+  Intake motor 10
+  */
+
+  //Encoders
 
   //right motor
   rev::CANEncoder m_encoderright = m_rightMotor13Lead.GetEncoder();
@@ -60,33 +107,6 @@ class Robot : public frc::IterativeRobot {
   rev::CANEncoder m_encoderleft = m_leftMotor1Lead.GetEncoder();
   rev::CANPIDController m_leftPIDcontroller = m_leftMotor1Lead.GetPIDController();
   double leftkP = 6e-5, leftkI = 1e-6, leftkD = 0, leftkIz = 0, leftkFF = 0.000015, leftkMaxOutput = 1.0, leftkMinOutput = -1.0;
-
-  frc::DifferentialDrive m_robotDrive{m_leftMotor1Lead, m_rightMotor13Lead};
-
-  //frc::Rotation2d gyroAngle{units::degree_t(-m_gyro.GetAngle())};
-
-  //frc::Joystick m_driveStick{0};
-  frc::XboxController driver{1};
-  frc::XboxController operater{2};
-
-  frc::DoubleSolenoid *shift;
-  AHRS *ahrs;
-
-  //Shooter Motors
-  rev::CANSparkMax m_shooterMotor{4, rev::CANSparkMax::MotorType::kBrushless};
-
-  
-
-  //Limit Switches
-  frc::DigitalInput firstSwitch{0};
-  frc::DigitalInput secondSwitch{1};
-  frc::DigitalInput thirdSwitch{2};
-
-  //declaring talon variable
-  TalonSRX tsrx = /*device ID*/{0};
-
-  //declaring victor variable
-  VictorSPX vsrx = /*device ID*/{0};
 
 
  public:
@@ -116,7 +136,6 @@ class Robot : public frc::IterativeRobot {
   const std::string kAutoNameDefault = "Default";
   const std::string kAutoNameCustom = "My Auto";
   
-
   frc2::PIDController pid{1.0, 0.0, 0.0};
 
   //Driver Controls
@@ -136,7 +155,10 @@ class Robot : public frc::IterativeRobot {
   bool shooterThrottle;
   bool moveBall;
 
-  
+  bool intakeDown;
+  bool intakeUp;
+
+  bool intakeBall;
 
   //Limelight and Autotargeting
   std::shared_ptr<NetworkTable> table = nt::NetworkTableInstance::GetDefault().GetTable("limelight"); 

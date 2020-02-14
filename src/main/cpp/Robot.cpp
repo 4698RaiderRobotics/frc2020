@@ -25,8 +25,16 @@ void Robot::RobotInit()
   m_rightMotor12.Follow(m_rightMotor13Lead);
   m_rightMotor14.Follow(m_rightMotor13Lead);
 
+  vspx.ConfigFactoryDefault();
+  tsrx1.ConfigFactoryDefault();
+  tsrx2.ConfigFactoryDefault();
+
+  tsrx2.Follow(tsrx1);
+
   shift = new frc::DoubleSolenoid(1, 0);
-  ahrs = new AHRS(frc::SPI::Port::kMXP);
+  boost = new frc::DoubleSolenoid(6 , 1);
+  intake = new frc::DoubleSolenoid(4 , 3);
+   ahrs = new AHRS(frc::SPI::Port::kMXP);
 
   //test motor
   m_testMotor.RestoreFactoryDefaults();
@@ -179,7 +187,7 @@ void Robot::AutonomousInit()
   thirddisabled = 0;
 }
 void Robot::AutonomousPeriodic()
-{ 
+{
 
   double gyroAngle = ahrs->GetAngle();
   frc::SmartDashboard::PutNumber("anglething", gyroAngle);
@@ -189,59 +197,68 @@ void Robot::AutonomousPeriodic()
   bool thirdInput = thirdSwitch.Get();
 
   //first switch on
-  if (firstInput == 1){
+  if (firstInput == 1)
+  {
     printf("firstSwitch %u\n", firstInput);
     motorOn = 1;
     firstdisabled = 1;
   }
   //second switch on
-  if (secondInput == 1 && seconddisabled == 0){
+  if (secondInput == 1 && seconddisabled == 0)
+  {
     printf("secondSwitch %u\n", secondInput);
     motorOn = 0;
     seconddisabled = 1;
   }
   //second switch released
-  if (secondInput == 0){
+  if (secondInput == 0)
+  {
     seconddisabled = 0;
   }
 
   //third switch on
-  if (thirdInput == 1 && thirddisabled == 0){
+  if (thirdInput == 1 && thirddisabled == 0)
+  {
     printf("thirdSwitch %u\n", thirdInput);
     thirddisabled = 1;
   }
-  
+
   //third disabled
-  if(thirdInput == 0 && thirddisabled == 1){
+  if (thirdInput == 0 && thirddisabled == 1)
+  {
     ballCounter--;
     thirddisabled = 0;
   }
-  
+
   //first disabled
-  if (firstInput == 0 && firstdisabled == 1){
+  if (firstInput == 0 && firstdisabled == 1)
+  {
     ballCounter++;
     firstdisabled = 0;
   }
 
-  if(motorOn == 1){
+  if (motorOn == 1)
+  {
     printf("motor running\n");
-  } 
-  if(motorOn == 0){
+  }
+  if (motorOn == 0)
+  {
     printf("stop motors\n");
   }
 
   frc::SmartDashboard::PutNumber("ballCounter", ballCounter);
 
   //talon motor movement
-  tsrx.Set(ControlMode::PercentOutput, 0);
+  tsrx1.Set(ControlMode::PercentOutput, 0);
 
   //victor motor movement
-  vsrx.Set(ControlMode::PercentOutput, 0);
+  vspx.Set(ControlMode::PercentOutput, 0);
 }
 
 void Robot::TeleopInit()
 {
   shift->Set(frc::DoubleSolenoid::Value::kReverse);
+  intake->Set(frc::DoubleSolenoid::Value::kReverse);
   revs = 0;
   m_colorwheel.Set(0);
 }
@@ -282,19 +299,39 @@ void Robot::TeleopPeriodic()
   //Operator controls
 
   //buttons for flywheel
-  if(shooterThrottle){
+  if (shooterThrottle)
+  {
     //use motor speed from limelight to shoot
   }
-  if(!shooterThrottle){
+  if (!shooterThrottle)
+  {
     //stop motors
   }
 
   //button to release ball to shoot
-  if(moveBall){
+  if (moveBall)
+  {
     //move delivery system
   }
-  if(!moveBall){
+  if (!moveBall)
+  {
     //stop delivery system
+  }
+
+  if (intakeDown)
+  {
+    intake->Set(frc::DoubleSolenoid::Value::kReverse);
+  }
+  if (intakeUp)
+  {
+    intake->Set(frc::DoubleSolenoid::Value::kForward);
+  }
+
+  if(intakeBall){
+    vspx.Set(ControlMode::PercentOutput, 0.2);
+  }
+  if(!intakeBall){
+    vspx.Set(ControlMode::PercentOutput, 0);
   }
 
   testPIDcontroller(&operater);
@@ -362,6 +399,13 @@ void Robot::getInput()
 
   //release ball to be shot (right bumper)
   moveBall = operater.GetRawButton(6);
+
+  //intake down
+  intakeDown = operater.GetAButton();
+  intakeUp = operater.GetBButton();
+
+  //take in ball
+  intakeBall = operater.GetXButton();
 
   //Color Sensor
   //position = operater.GetAButton();   //right bumper
