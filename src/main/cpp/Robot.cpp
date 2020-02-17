@@ -12,6 +12,9 @@
 
 void Robot::RobotInit()
 {
+  nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("camMode",0);
+  nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("ledMode",0);
+
   //drive motors
   m_leftMotor1Lead.RestoreFactoryDefaults();
   m_rightMotor13Lead.RestoreFactoryDefaults();
@@ -25,7 +28,15 @@ void Robot::RobotInit()
   m_rightMotor12.Follow(m_rightMotor13Lead);
   m_rightMotor14.Follow(m_rightMotor13Lead);
 
-  shift = new frc::DoubleSolenoid(1, 0);
+  vspx.ConfigFactoryDefault();
+  tsrx1.ConfigFactoryDefault();
+  tsrx2.ConfigFactoryDefault();
+
+  tsrx2.Follow(tsrx1);
+
+  shift = new frc::DoubleSolenoid(5 , 2);
+  boost = new frc::DoubleSolenoid(6 , 1);
+  intake = new frc::DoubleSolenoid(4 , 3);
   ahrs = new AHRS(frc::SPI::Port::kMXP);
 
   //test motor
@@ -93,11 +104,10 @@ void Robot::RobotInit()
 void Robot::RobotPeriodic()
 {
   tP = frc::SmartDashboard::GetNumber("tP", -0.025);
-  kF = frc::SmartDashboard::GetNumber("fP", 0.05);
+  kF = 0.1;
 
   double ts = nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("ts", 0.0);
   frc::SmartDashboard::PutNumber("ts", ts);
-  nt::NetworkTableInstance::GetDefault().GetTable("limelight")->PutNumber("ledMode", 1);
 
   // read PID coefficients from SmartDashboard
   double drivep = frc::SmartDashboard::GetNumber("drive P Gain", 0);
@@ -168,80 +178,17 @@ void Robot::RobotPeriodic()
 void Robot::AutonomousInit()
 {
   ahrs->Reset();
-  nt::NetworkTableInstance::GetDefault().GetTable("limelight")->PutNumber("camMode", 0);
-  nt::NetworkTableInstance::GetDefault().GetTable("limelight")->PutNumber("ledMode", 0);
-  table->PutNumber("pipeline", 4);
 
-  motorOn = 0;
-  seconddisabled = 0;
-  ballCounter = 0;
-  firstdisabled = 0;
-  thirddisabled = 0;
 }
 void Robot::AutonomousPeriodic()
-{ 
-
+{
+  
   double gyroAngle = ahrs->GetAngle();
   frc::SmartDashboard::PutNumber("anglething", gyroAngle);
 
-  bool firstInput = firstSwitch.Get();
-  bool secondInput = secondSwitch.Get();
-  bool thirdInput = thirdSwitch.Get();
-
-  //first switch on
-  if (firstInput == 1){
-    printf("firstSwitch %u\n", firstInput);
-    motorOn = 1;
-    firstdisabled = 1;
-  }
-  //second switch on
-  if (secondInput == 1 && seconddisabled == 0){
-    printf("secondSwitch %u\n", secondInput);
-    motorOn = 0;
-    seconddisabled = 1;
-  }
-  //second switch released
-  if (secondInput == 0){
-    seconddisabled = 0;
-  }
-
-  //third switch on
-  if (thirdInput == 1 && thirddisabled == 0){
-    printf("thirdSwitch %u\n", thirdInput);
-    thirddisabled = 1;
-  }
-  
-  //third disabled
-  if(thirdInput == 0 && thirddisabled == 1){
-    ballCounter--;
-    thirddisabled = 0;
-  }
-  
-  //first disabled
-  if (firstInput == 0 && firstdisabled == 1){
-    ballCounter++;
-    firstdisabled = 0;
-  }
-
-  if(motorOn == 1){
-    printf("motor running\n");
-  } 
-  if(motorOn == 0){
-    printf("stop motors\n");
-  }
-
-  frc::SmartDashboard::PutNumber("ballCounter", ballCounter);
-
-  //talon motor movement
-  tsrx.Set(ControlMode::PercentOutput, 0);
-
-  //victor motor movement
-  vsrx.Set(ControlMode::PercentOutput, 0);
 }
-
 void Robot::TeleopInit()
 {
-  shift->Set(frc::DoubleSolenoid::Value::kReverse);
   revs = 0;
   m_colorwheel.Set(0);
 }
@@ -251,6 +198,7 @@ void Robot::TeleopPeriodic()
   getInput();
   double ts = nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("ts", 0.0);
   frc::SmartDashboard::PutNumber("ts", ts);
+  //indexing();
 
   /*readColorSensor();
   if (position || rotationControl)
@@ -268,39 +216,105 @@ void Robot::TeleopPeriodic()
     initp = true;
   }*/
 
-  if (shiftUp)
-  {
-    shift->Set(frc::DoubleSolenoid::Value::kReverse);
-    bool gear = false;
+
+  bool holdup = false;
+  if(shiftbuttonpressed == true && shiftup == true){
+   shiftup = false;
+   holdup = true;
   }
-  if (shiftDown)
-  {
-    shift->Set(frc::DoubleSolenoid::Value::kForward);
-    bool gear = true;
+  if(shiftbuttonpressed == true && shiftup == false && holdup == false){
+    shiftup = true;
   }
+  if (shiftbuttonpressed == false){
+    if (shiftup == true){
+      shift->Set(frc::DoubleSolenoid::Value::kReverse);
+    }
+    if (shiftup == false){
+      shift->Set(frc::DoubleSolenoid::Value::kForward);
+    }
+  }
+
+  bool waitaminute = false;
+  if(boostbuttonpressed == true && boostup == true){
+   boostup = false;
+   waitaminute = true;
+  }
+  if(boostbuttonpressed == true && boostup == false && waitaminute == false){
+    boostup = true;
+  }
+  if (boostbuttonpressed == false){
+    if (boostup == true){
+      boost->Set(frc::DoubleSolenoid::Value::kReverse);
+    }
+    if (boostup == false){
+      boost->Set(frc::DoubleSolenoid::Value::kForward);
+    }
+  }
+
+  bool dontcare = false;
+  if(intakebuttonpressed == true && intakeup == true){
+   intakeup = false;
+   dontcare = true;
+  }
+  if(intakebuttonpressed == true && intakeup == false && dontcare == false){
+    intakeup = true;
+  }
+  if (intakebuttonpressed == false){
+    if (intakeup == true){
+      intake->Set(frc::DoubleSolenoid::Value::kReverse);
+    }
+    if (intakeup == false){
+      intake->Set(frc::DoubleSolenoid::Value::kForward);
+    }
+  }
+
+  bool indexwait = false;
+  if(indexbuttonpressed == true && indexup == true){
+   indexup = false;
+   indexwait = true;
+  }
+  if(indexbuttonpressed == true && indexup == false && indexwait == false){
+    indexup = true;
+  }
+  if (indexbuttonpressed == false){
+    if (indexup == true){
+      vspx.Set(ControlMode::PercentOutput, .5);
+    }
+    if (indexup == false){
+      vspx.Set(ControlMode::PercentOutput, 0);
+    }
+  }
+
 
   //Operator controls
 
   //buttons for flywheel
-  if(shooterThrottle){
+  if (shooterThrottle)
+  {
     //use motor speed from limelight to shoot
     testPIDcontroller();
   }
-  if(!shooterThrottle){
+  if (!shooterThrottle)
+  {
     //stop motors
     m_testMotor.Set(0);
   }
 
   //button to release ball to shoot
-  if(moveBall){
+  if (moveBall)
+  {
     //move delivery system
   }
-  if(!moveBall){
+  if (!moveBall)
+  {
     //stop delivery system
   }
 
   //testPIDcontroller(&operater);
+<<<<<<< HEAD
 
+=======
+>>>>>>> master
   //Sets shifter to high or low gear
   if (throttle)
   {
@@ -311,19 +325,16 @@ void Robot::TeleopPeriodic()
     throttleMultiplier = 1;
   }
 
+
   //Limelight Target Reflective Strips
   if (autoAlign)
   {
-    nt::NetworkTableInstance::GetDefault().GetTable("limelight")->PutNumber("camMode", 0);
-    nt::NetworkTableInstance::GetDefault().GetTable("limelight")->PutNumber("ledMode", 0);
-    table->PutNumber("pipeline", 1);
+    table->PutNumber("pipeline", 4);
     tCorrection = AutoTargetTurn();
   }
   //Turns off Targeting
   else
   {
-    nt::NetworkTableInstance::GetDefault().GetTable("limelight")->PutNumber("ledMode", 1);
-    nt::NetworkTableInstance::GetDefault().GetTable("limelight")->PutNumber("camMode", 1);
     tCorrection = 0;
   }
   //Makes the throttle button half the output
@@ -345,17 +356,14 @@ void Robot::getInput()
   //throttle = m_driveStick.GetRawButton(1);  //used for halving speed
   throttle = driver.GetRawButton(6); //right bumper throttles speed
 
-  //shiftDown = m_driveStick.GetRawButton(2); //shift up and down buttons
-  //shiftUp = m_driveStick.GetRawButton(3);
-
-  shiftDown = driver.GetBButton();
-  shiftUp = driver.GetAButton();
+  shiftbuttonpressed = driver.GetAButtonPressed(); //shifts up and down
+  boostbuttonpressed = driver.GetBButtonPressed(); //boosts front up and down
 
   //autoAlign = m_driveStick.GetRawButton(4);
   //nullTarget = m_driveStick.GetRawButton(5);
 
   autoAlign = driver.GetStartButton();
-  nullTarget = driver.GetRawButton(10);
+  nullTarget = driver.GetXButton();
 
   //test motor
   startbtn = operater.GetStartButton();
@@ -366,6 +374,13 @@ void Robot::getInput()
   //release ball to be shot (right bumper)
   moveBall = operater.GetRawButton(6);
 
+  //intake down
+  intakebuttonpressed = operater.GetAButtonPressed();
+  indexbuttonpressed = operater.GetBButtonPressed();
+  
+  //take in ball
+  intakeBall = operater.GetXButton();
+
   //Color Sensor
   //position = operater.GetAButton();   //right bumper
   //rotationControl = operater.GetBButton();   //left bumper
@@ -375,7 +390,7 @@ double Robot::AutoTargetTurn()
 {
   double tx = table->GetNumber("tx", 0.0);
   ty = table->GetNumber("ty", 0.0);
-  targetDist = (5.5 / tan((30 + ty) * (wpi::math::pi / 180)));
+  targetDist = (5.666666 / tan((49.05 + ty) * (wpi::math::pi / 180)));
   frc::SmartDashboard::PutNumber("Distance to Target", targetDist);
   double ta = table->GetNumber("ta", 0.0);
   double ts = table->GetNumber("ts", 0.0);
