@@ -28,16 +28,17 @@
 #include "AHRS.h"
 #include <frc/controller/PIDController.h>
 #include <units/units.h>
+#include <ctre/phoenix/music/Orchestra.h>
 #include <wpi/math>
 #include <iostream>
 #include <frc/util/color.h>
-#include <frc/DigitalInput.h>
 #include "rev/ColorSensorV3.h"
 #include "rev/ColorMatch.h"
 #include "ctre/Phoenix.h"
 #include "colorPIDcontroller.h"
 #include "shooterPIDcontroller.h"
 #include "readColorSensor.h"
+#include "indexing.h"
 
 class Robot : public frc::IterativeRobot {
   //frc::Rotation2d gyroAngle{units::degree_t(-m_gyro.GetAngle())};
@@ -55,11 +56,6 @@ class Robot : public frc::IterativeRobot {
   //Gyro Declaration
   AHRS *ahrs;
 
-  //Limit Switches
-  frc::DigitalInput firstSwitch{0};
-  frc::DigitalInput secondSwitch{1};
-  frc::DigitalInput thirdSwitch{2};
-
   //All Motors
 
   //Drivetrain motors
@@ -75,16 +71,18 @@ class Robot : public frc::IterativeRobot {
 
   //Shooter Motors
   rev::CANSparkMax m_shooterMotor{4, rev::CANSparkMax::MotorType::kBrushless};
-
-  //Intake Motor
-  rev::CANSparkMax m_intakemotor{10, rev::CANSparkMax::MotorType::kBrushless};
+  //test motor CAN ID 5
 
   //declaring talon variables
   TalonSRX tsrx1 = /*device ID*/{6};
   TalonSRX tsrx2 = /*device ID*/{7};  
 
-  //declaring victor variable
-  VictorSPX vspx = /*device ID*/{8};
+  //Victor spx CAN ID 8
+  
+  //color motor CAN ID 9
+
+  //Intake Motor
+  rev::CANSparkMax m_intakemotor{10, rev::CANSparkMax::MotorType::kBrushless};
 
   /*
   Current CAN IDs
@@ -94,6 +92,7 @@ class Robot : public frc::IterativeRobot {
   Indexing 8
   Color Wheel 9
   Intake motor 10
+  right drive motors 12, 13, 14
   */
 
   //Encoders
@@ -148,15 +147,21 @@ class Robot : public frc::IterativeRobot {
   bool throttle; 
   double throttleMultiplier;
 
-  bool shiftUp;
-  bool shiftDown;
+  bool shiftbuttonpressed;
+  bool shiftup;
+
+  bool boostbuttonpressed;
+  bool boostup;
 
   //Operater Controls
   bool shooterThrottle;
   bool moveBall;
 
-  bool intakeDown;
-  bool intakeUp;
+  bool intakeUse;
+  bool intakebuttonpressed;
+
+  bool indexbuttonpressed;
+  bool indexup;
 
   bool intakeBall;
 
@@ -171,11 +176,5 @@ class Robot : public frc::IterativeRobot {
   double tCorrection;
   double targetDist;
 
-  //Limit Switches
-  bool motorOn;
-  double ballCounter;
-  bool firstdisabled;
-  bool seconddisabled;
-  bool thirddisabled;
-
+  bool intakeup = true;
 };
