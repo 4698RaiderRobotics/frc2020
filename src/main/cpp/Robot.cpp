@@ -15,6 +15,9 @@ void Robot::RobotInit()
   nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("camMode",0);
   nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("ledMode",0);
 
+  cs::UsbCamera camera = frc::CameraServer::GetInstance()->StartAutomaticCapture();
+  camera.SetResolution(160,120);
+
   //drive motors
   m_leftMotor1Lead.RestoreFactoryDefaults();
   m_rightMotor13Lead.RestoreFactoryDefaults();
@@ -89,8 +92,8 @@ void Robot::RobotInit()
   m_colorencoder.SetPosition(0);
 
   //drive motors
-  m_encoderleft.SetPositionConversionFactor((wpi::math::pi) / (7 * 3));
-  m_encoderright.SetPositionConversionFactor((wpi::math::pi) / (7 * 3));
+  m_encoderleft.SetPositionConversionFactor((4 * wpi::math::pi) / (18 * 12));
+  m_encoderright.SetPositionConversionFactor((4 * wpi::math::pi) / (18 * 12));
 }
 
 /**
@@ -178,19 +181,25 @@ void Robot::RobotPeriodic()
 void Robot::AutonomousInit()
 {
   ahrs->Reset();
-
+  m_encoderright.SetPosition(0);
+  m_encoderleft.SetPosition(0);
 }
 void Robot::AutonomousPeriodic()
 {
-  
   double gyroAngle = ahrs->GetAngle();
   frc::SmartDashboard::PutNumber("anglething", gyroAngle);
-
+  bool once = true;
+  if(once){
+    forwardDrive(5, 1);
+    once = false;
+  }
 }
 void Robot::TeleopInit()
 {
   revs = 0;
   m_colorwheel.Set(0);
+  m_encoderleft.SetPosition(0);
+  m_encoderright.SetPosition(0);
 }
 
 void Robot::TeleopPeriodic()
@@ -198,6 +207,10 @@ void Robot::TeleopPeriodic()
   getInput();
   double ts = nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("ts", 0.0);
   frc::SmartDashboard::PutNumber("ts", ts);
+  distright = m_encoderright.GetPosition();
+  distleft = m_encoderleft.GetPosition();
+  frc::SmartDashboard::PutNumber("distright", distright);
+  frc::SmartDashboard::PutNumber("distleft", distleft);
   //indexing();
 
   /*readColorSensor();
@@ -268,6 +281,7 @@ void Robot::TeleopPeriodic()
     }
   }
 
+  /*
   bool indexwait = false;
   if(indexbuttonpressed == true && indexup == true){
    indexup = false;
@@ -284,31 +298,51 @@ void Robot::TeleopPeriodic()
       vspx.Set(ControlMode::PercentOutput, 0);
     }
   }
+  */
 
-
+  if(indexbuttonpressed){
+    vspx.Set(ControlMode::PercentOutput, .5);
+  }
+  if(!indexbuttonpressed){
+    vspx.Set(ControlMode::PercentOutput, 0);
+  }
+  if(reverseindexbutton){
+    vspx.Set(ControlMode::PercentOutput, -.5);
+  }
+  if(!reverseindexbutton){
+    vspx.Set(ControlMode::PercentOutput, 0);
+  }
   //Operator controls
 
   //buttons for flywheel
   if (shooterThrottle)
   {
     //use motor speed from limelight to shoot
+    testPIDcontroller(&operater);
   }
   if (!shooterThrottle)
   {
     //stop motors
+    m_testMotor.Set(0);
   }
 
-  //button to release ball to shoot
-  if (moveBall)
+  //left stick axis to spin intake
+  if (intakeBall > 0.5)
   {
-    //move delivery system
+    vspx2.Set(ControlMode::PercentOutput, -.75);
   }
-  if (!moveBall)
+  if (intakeBall < 0.5 && intakeBall > -0.5)
   {
-    //stop delivery system
+    vspx2.Set(ControlMode::PercentOutput, 0);
+  }
+  if (intakeBall < -0.5)
+  {
+    vspx2.Set(ControlMode::PercentOutput, .75);
   }
 
   //testPIDcontroller(&operater);
+  
+  
   //Sets shifter to high or low gear
   if (throttle)
   {
@@ -366,14 +400,15 @@ void Robot::getInput()
   shooterThrottle = operater.GetRawButton(5);
 
   //release ball to be shot (right bumper)
-  moveBall = operater.GetRawButton(6);
+  //moveBall = operater.GetRawButton(6);
 
   //intake down
   intakebuttonpressed = operater.GetAButtonPressed();
-  indexbuttonpressed = operater.GetBButtonPressed();
+  indexbuttonpressed = operater.GetRawButton(6);
+  reverseindexbutton = operater.GetBButtonPressed();
   
   //take in ball
-  intakeBall = operater.GetXButton();
+  intakeBall = operater.GetY(frc::GenericHID::JoystickHand::kLeftHand);
 
   //Color Sensor
   //position = operater.GetAButton();   //right bumper
@@ -399,6 +434,12 @@ double Robot::AutoTargetTurn()
   }
   return (steeringAdjust);
 }
+
+/*double Robot::rampMotorSpeed(){
+  ty = table->GetNumber("ty", 0.0);
+  targetDist = (5.5 / tan((30 + ty) * (wpi::math::pi / 180)));
+  return(targetDist);
+}*/
 
 void Robot::rightPIDcontroller(double rightSetPoint)
 {
@@ -502,12 +543,27 @@ void Robot::executeColorSensor()
 
 void Robot::forwardDrive(double feet, double speed)
 {
-  double leftRPM = (speed * 420) / (wpi::math::pi / 3);
-  double rightRPM = (speed * 420) / (wpi::math::pi / 3);
-  while (m_encoderright.GetPosition() < feet || m_encoderleft.GetPosition() < feet)
-  {
-    rightPIDcontroller(rightRPM);
-    leftPIDcontroller(leftRPM);
+  double initforwardangle = ahrs->GetAngle();
+
+  while(feet - abs(m_encoderleft.GetPosition()) > .1){
+    double forwardangle = ahrs->GetAngle();
+    double angleerror = initforwardangle - forwardangle;
+    double forwardAdjust = 0;
+    frc::SmartDashboard::PutNumber("distright", m_encoderright.GetPosition());
+    frc::SmartDashboard::PutNumber("distleft", m_encoderleft.GetPosition());
+
+    if (angleerror > 1.0)
+    {
+      forwardAdjust = -0.025 * angleerror;
+    }
+    else if (angleerror < -1.0)
+    {
+      forwardAdjust = 0.025 * angleerror;
+    }
+
+    double leftRPM = speed / (((4 * wpi::math::pi) / (12 * 18)) / 60);
+    double rightRPM = speed / (((4 * wpi::math::pi) / (12 * 18)) / 60);
+    m_robotDrive.ArcadeDrive(.5, forwardAdjust);
   }
 }
 void Robot::leftTurn(double turnangleleft)

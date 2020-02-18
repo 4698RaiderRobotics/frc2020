@@ -32,6 +32,7 @@
 #include <wpi/math>
 #include <iostream>
 #include <frc/util/color.h>
+#include <cameraserver/CameraServer.h>
 #include "rev/ColorSensorV3.h"
 #include "rev/ColorMatch.h"
 #include "ctre/Phoenix.h"
@@ -39,6 +40,7 @@
 #include "shooterPIDcontroller.h"
 #include "readColorSensor.h"
 #include "indexing.h"
+
 
 class Robot : public frc::IterativeRobot {
   //frc::Rotation2d gyroAngle{units::degree_t(-m_gyro.GetAngle())};
@@ -82,7 +84,7 @@ class Robot : public frc::IterativeRobot {
   //color motor CAN ID 9
 
   //Intake Motor
-  rev::CANSparkMax m_intakemotor{10, rev::CANSparkMax::MotorType::kBrushless};
+  VictorSPX vspx2 = /*device ID*/{10};
 
   /*
   Current CAN IDs
@@ -106,6 +108,13 @@ class Robot : public frc::IterativeRobot {
   rev::CANEncoder m_encoderleft = m_leftMotor1Lead.GetEncoder();
   rev::CANPIDController m_leftPIDcontroller = m_leftMotor1Lead.GetPIDController();
   double leftkP = 6e-5, leftkI = 1e-6, leftkD = 0, leftkIz = 0, leftkFF = 0.000015, leftkMaxOutput = 1.0, leftkMinOutput = -1.0;
+
+  //frc::Rotation2d gyroAngle{units::degree_t(-m_gyro.GetAngle())};
+
+  //Limit Switches
+  frc::DigitalInput firstSwitch{0};
+  frc::DigitalInput secondSwitch{1};
+  frc::DigitalInput thirdSwitch{2};
 
 
  public:
@@ -157,13 +166,15 @@ class Robot : public frc::IterativeRobot {
   bool shooterThrottle;
   bool moveBall;
 
+
   bool intakeUse;
   bool intakebuttonpressed;
 
   bool indexbuttonpressed;
   bool indexup;
+  bool reverseindexbutton;
 
-  bool intakeBall;
+  double intakeBall;
 
   //Limelight and Autotargeting
   std::shared_ptr<NetworkTable> table = nt::NetworkTableInstance::GetDefault().GetTable("limelight"); 
@@ -175,6 +186,8 @@ class Robot : public frc::IterativeRobot {
   bool nullTarget;
   double tCorrection;
   double targetDist;
+  double distright;
+  double distleft;
 
   bool intakeup = true;
 };
