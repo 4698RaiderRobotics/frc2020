@@ -107,7 +107,8 @@ void Robot::RobotInit()
 void Robot::RobotPeriodic()
 {
   tP = frc::SmartDashboard::GetNumber("tP", -0.025);
-  kF = 0.1;
+  kF = 0.15;
+
 
   double ts = nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("ts", 0.0);
   frc::SmartDashboard::PutNumber("ts", ts);
@@ -180,19 +181,80 @@ void Robot::RobotPeriodic()
  */
 void Robot::AutonomousInit()
 {
-  ahrs->Reset();
   m_encoderright.SetPosition(0);
   m_encoderleft.SetPosition(0);
-}
+  boost->Set(frc::DoubleSolenoid::kReverse);
+  table->PutNumber("pipeline", 4);
+  ahrs->Reset();
+  driveForward = false;
+  turnLeft = false;
+  turnRight = false;
+  targetAuto = true;
+  autoShoot = false;
+  recenterbot = false;
+  autointakedown = false;
+  autocounter = 0;
+  }
 void Robot::AutonomousPeriodic()
 {
   double gyroAngle = ahrs->GetAngle();
   frc::SmartDashboard::PutNumber("anglething", gyroAngle);
-  bool once = true;
-  if(once){
-    forwardDrive(5, 1);
-    once = false;
+  if (targetAuto){
+      tCorrection = AutoTargetTurn();
+      m_robotDrive.ArcadeDrive(0 , tCorrection);
+      printf("tCorrection %f \n", tCorrection);
+      printf("targeting \n");
+      if (abs(tx) < 1.0 && tx != 0){
+        targetAuto = false;
+        autoShoot = true;
+      }
   }
+  if (autoShoot){
+    if (autocounter < 300){
+      autocounter ++;
+      printf("counter %d \n", autocounter);
+      testPIDcontroller(&operater, true);
+      if (autocounter > 100){
+        vspx.Set(ControlMode::PercentOutput, .7);
+      }
+    }
+    if (autocounter == 300){
+      testPIDcontroller(&operater, false);
+      vspx.Set(ControlMode::PercentOutput, 0);
+      autoShoot = false;
+      recenterbot = true;
+    }
+  }
+  if (recenterbot){
+    if (gyroAngle < -1.0){
+      m_robotDrive.ArcadeDrive(0, .3);
+    }
+    else if (gyroAngle > 1.0){
+      m_robotDrive.ArcadeDrive(0, -.3);
+    }
+    else {
+      recenterbot = false;
+      turnLeft= true;
+    }
+  }
+  if(turnLeft){
+    ccwTurn(40);
+    turnLeft = false;
+    driveForward = true;
+  }
+  if(driveForward){
+    forwardDrive(11, 0.7);
+    driveForward = false;
+    autointakedown = true;
+  }
+  if(autointakedown){
+    intake->Set(frc::DoubleSolenoid::kForward);
+    vspx2.Set(ControlMode::PercentOutput, -.75);
+    vspx.Set(ControlMode::PercentOutput, .5);
+    forwardDrive(1, 0.5);
+    autointakedown = false;
+  }
+
 }
 void Robot::TeleopInit()
 {
@@ -200,11 +262,17 @@ void Robot::TeleopInit()
   m_colorwheel.Set(0);
   m_encoderleft.SetPosition(0);
   m_encoderright.SetPosition(0);
+  table->PutNumber("pipeline", 0);
+  m_robotDrive.ArcadeDrive(0 , 0);
+  boost->Set(frc::DoubleSolenoid::kReverse);
+  ahrs->Reset();
 }
 
 void Robot::TeleopPeriodic()
 {
   getInput();
+  double gyroAngle = ahrs->GetAngle();
+  frc::SmartDashboard::PutNumber("anglething", gyroAngle);
   double ts = nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("ts", 0.0);
   frc::SmartDashboard::PutNumber("ts", ts);
   distright = m_encoderright.GetPosition();
@@ -300,25 +368,25 @@ void Robot::TeleopPeriodic()
   }
   */
 
-  if(indexbuttonpressed){
+  
+  //Operator controls
+
+  //delivery system forward and reverse
+  if(indexbutton){
     vspx.Set(ControlMode::PercentOutput, .5);
   }
-  if(!indexbuttonpressed){
-    vspx.Set(ControlMode::PercentOutput, 0);
-  }
-  if(reverseindexbutton){
+  else if(reverseindexbutton){
     vspx.Set(ControlMode::PercentOutput, -.5);
   }
-  if(!reverseindexbutton){
+  else{
     vspx.Set(ControlMode::PercentOutput, 0);
   }
-  //Operator controls
 
   //buttons for flywheel
   if (shooterThrottle)
   {
     //use motor speed from limelight to shoot
-    testPIDcontroller(&operater);
+    testPIDcontroller(&operater, false);
   }
   if (!shooterThrottle)
   {
@@ -326,7 +394,7 @@ void Robot::TeleopPeriodic()
     m_testMotor.Set(0);
   }
 
-  //left stick axis to spin intake
+  //left stick axis to spin intake (down = ball in, up = ball out, nothing = no motors)
   if (intakeBall > 0.5)
   {
     vspx2.Set(ControlMode::PercentOutput, -.75);
@@ -359,19 +427,24 @@ void Robot::TeleopPeriodic()
   {
     table->PutNumber("pipeline", 4);
     tCorrection = AutoTargetTurn();
+    printf("tx %f \n", tx);
   }
+  
   //Turns off Targeting
-  else
+  if(!autoAlign)
   {
+    table->PutNumber("pipeline", 0);
     tCorrection = 0;
   }
   //Makes the throttle button half the output
+  //printf("%f \n", povsetpoints);
   turnMultiplier = .6;
   driveMultiplier = .8;
   m_robotDrive.ArcadeDrive(speed * throttleMultiplier * driveMultiplier, (-rotation * throttleMultiplier * turnMultiplier) + tCorrection); //Drive function
 }
 
-void Robot::TestPeriodic() {}
+void Robot::TestPeriodic() {
+}
 
 void Robot::getInput()
 {
@@ -383,6 +456,8 @@ void Robot::getInput()
   speed = RT - LT;
   //throttle = m_driveStick.GetRawButton(1);  //used for halving speed
   throttle = driver.GetRawButton(6); //right bumper throttles speed
+
+  povsetpoints = operater.GetPOV();
 
   shiftbuttonpressed = driver.GetAButtonPressed(); //shifts up and down
   boostbuttonpressed = driver.GetBButtonPressed(); //boosts front up and down
@@ -399,15 +474,16 @@ void Robot::getInput()
   //left bumper for operator
   shooterThrottle = operater.GetRawButton(5);
 
-  //release ball to be shot (right bumper)
-  //moveBall = operater.GetRawButton(6);
-
   //intake down
   intakebuttonpressed = operater.GetAButtonPressed();
-  indexbuttonpressed = operater.GetRawButton(6);
-  reverseindexbutton = operater.GetBButtonPressed();
+
+  //right bumper
+  indexbutton = operater.GetBumper(frc::GenericHID::JoystickHand::kRightHand);
+
+  //b button
+  reverseindexbutton = operater.GetBButton();
   
-  //take in ball
+  //take in ball (axis of left joystick)
   intakeBall = operater.GetY(frc::GenericHID::JoystickHand::kLeftHand);
 
   //Color Sensor
@@ -417,10 +493,12 @@ void Robot::getInput()
 
 double Robot::AutoTargetTurn()
 {
-  double tx = table->GetNumber("tx", 0.0);
+  tx = table->GetNumber("tx", 0.0);
   ty = table->GetNumber("ty", 0.0);
-  targetDist = (5.666666 / tan((49.05 + ty) * (wpi::math::pi / 180)));
+  targetDist = (5.75 / tan((25.915 + ty) * (wpi::math::pi / 180)));
   frc::SmartDashboard::PutNumber("Distance to Target", targetDist);
+  frc::SmartDashboard::PutNumber("tx", tx);
+  frc::SmartDashboard::PutNumber("ty", ty);
   double ta = table->GetNumber("ta", 0.0);
   double ts = table->GetNumber("ts", 0.0);
   steeringAdjust = 0.0;
@@ -563,45 +641,57 @@ void Robot::forwardDrive(double feet, double speed)
 
     double leftRPM = speed / (((4 * wpi::math::pi) / (12 * 18)) / 60);
     double rightRPM = speed / (((4 * wpi::math::pi) / (12 * 18)) / 60);
-    m_robotDrive.ArcadeDrive(.5, forwardAdjust);
+    m_robotDrive.ArcadeDrive(speed , forwardAdjust);
   }
 }
-void Robot::leftTurn(double turnangleleft)
+void Robot::cwTurn(double turnangleleft)
 {
-  double initleftangle = ahrs->GetAngle();
-  double goalleftangle = initleftangle - turnangleleft;
-  double currentleftangle = initleftangle;
+  bool exitleftturn = true;
+  double initleftangle;
+  double goalleftangle;
+  double currentleftangle;
+  if (exitleftturn){
+    initleftangle = ahrs->GetAngle();
+    goalleftangle = initleftangle - turnangleleft;
+    currentleftangle = initleftangle;
+    exitleftturn = false;
+  }
   while (currentleftangle > goalleftangle)
   {
     currentleftangle = ahrs->GetAngle();
-    rightPIDcontroller(960);
-    leftPIDcontroller(-960);
+    m_robotDrive.ArcadeDrive(0 , -.4);
   }
   if (currentleftangle <= goalleftangle)
   {
-    brakeRobot();
+    return;
   }
 }
-void Robot::rightTurn(double turnangleright)
+void Robot::ccwTurn(double turnangleright)
 {
-  double initrightangle = ahrs->GetAngle();
-  double goalrightangle = initrightangle + turnangleright;
-  double currentrightangle = initrightangle;
+  bool exitrightturn = true;
+  double initrightangle;
+  double goalrightangle;
+  double currentrightangle;
+  if (exitrightturn){
+    initrightangle = ahrs->GetAngle();
+    goalrightangle = initrightangle + turnangleright;
+    currentrightangle = initrightangle;
+    exitrightturn = false;
+  }
   while (currentrightangle < goalrightangle)
   {
     currentrightangle = ahrs->GetAngle();
-    rightPIDcontroller(-960);
-    leftPIDcontroller(960);
+    m_robotDrive.ArcadeDrive(0 , .4);
   }
   if (currentrightangle >= goalrightangle)
   {
-    brakeRobot();
+    return;
   }
+
 }
 void Robot::brakeRobot()
 {
-  rightPIDcontroller(0);
-  leftPIDcontroller(0);
+  m_robotDrive.ArcadeDrive(0 , 0);
 }
 #ifndef RUNNING_FRC_TESTS
 int main()

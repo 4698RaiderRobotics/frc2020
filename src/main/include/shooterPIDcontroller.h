@@ -9,22 +9,16 @@ double testkP = 0.000300, testkI = 1, testkD = 0, testkIz = 0, testkFF = 0.00004
 
 
 
-void testPIDcontroller(frc::XboxController * shooteroperater)
+void testPIDcontroller(frc::XboxController * shooteroperater,  bool autoShoot)
 {
     //test motor PID
     double testMaxRPM = 5700;
     double testSetPoint;
-    bool testABtn;
-    bool testBBtn;
-    bool testXBtn;
-    bool testYBtn;
     double RPMstick;
+    double povsetpoint;
     //test motor
-  testABtn = shooteroperater->GetAButton();
-  testBBtn = shooteroperater->GetBButton();
-  testXBtn = shooteroperater->GetXButton();
-  testYBtn = shooteroperater->GetYButton();
-  RPMstick = shooteroperater->GetY(frc::GenericHID::JoystickHand::kLeftHand);
+    povsetpoint = shooteroperater->GetPOV();
+    RPMstick = shooteroperater->GetY(frc::GenericHID::JoystickHand::kLeftHand);
     // read PID coefficients from SmartDashboard
     double testp = frc::SmartDashboard::GetNumber("test P Gain", 0.000250);
     double testi = frc::SmartDashboard::GetNumber("test I Gain", 0);
@@ -62,23 +56,42 @@ void testPIDcontroller(frc::XboxController * shooteroperater)
         testkMinOutput = testmin;
         testkMaxOutput = testmax;
     }
-    if (testABtn)
+    if (povsetpoint == 0)
     {
-        testSetPoint = 1000;
+        testSetPoint = 2700;
     }
-    else if (testBBtn)
+    else if (povsetpoint == 45 || autoShoot)
     {
-        testSetPoint = 2000;
+        testSetPoint = 2800;
+    }    
+    else if (povsetpoint == 90)
+    {
+        testSetPoint = 2900;
     }
-    else if (testYBtn)
+    else if (povsetpoint == 135)
     {
         testSetPoint = 3000;
     }
-    else if (testXBtn)
+    else if (povsetpoint == 180)
     {
-        testSetPoint = 4000;
+        testSetPoint = 3100;
     }
-    else if (-.1 > RPMstick || .1 < RPMstick)
+    else if (povsetpoint == 225)
+    {
+        testSetPoint = 3200;
+    }
+    else if (povsetpoint == 270)
+    {
+        testSetPoint = 3300;
+    }
+    else if (povsetpoint == 315)
+    {
+        testSetPoint = 3400;
+    }
+    else if (povsetpoint == -1 && autoShoot == false){
+        m_testMotor.Set(0);
+    }
+    else if (-.1 >= RPMstick || .1 <= RPMstick)
     {
         testSetPoint = testMaxRPM * RPMstick;
     }
@@ -86,7 +99,8 @@ void testPIDcontroller(frc::XboxController * shooteroperater)
     {
         m_testMotor.Set(0);
     }
-    if (-.1 > RPMstick || .1 < RPMstick || testXBtn || testYBtn || testBBtn || testABtn)
+    if (RPMstick <= -.1 || .1 <= RPMstick || povsetpoint == 0 || autoShoot
+        || povsetpoint == 90 || povsetpoint == 180 || povsetpoint == 270)
     {
         if (testSetPoint >= 1000)
         {
@@ -97,7 +111,7 @@ void testPIDcontroller(frc::XboxController * shooteroperater)
             testiz = 0;
         }
         m_testpidController.SetIZone(testiz);
-        m_testpidController.SetReference(testSetPoint, rev::ControlType::kVelocity);
+        m_testpidController.SetReference(-testSetPoint, rev::ControlType::kVelocity);
     }
     frc::SmartDashboard::PutNumber("Motor temps", m_testMotor.GetMotorTemperature());
     frc::SmartDashboard::PutNumber("SetPoint", testSetPoint);

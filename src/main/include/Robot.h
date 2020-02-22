@@ -18,6 +18,7 @@
 #include <networktables/NetworkTable.h>
 #include <networktables/NetworkTableInstance.h>
 #include <frc/DoubleSolenoid.h>
+#include <frc/Timer.h>
 #include "rev/CANSparkMax.h"
 #include <frc/AnalogGyro.h>
 #include <frc/drive/DifferentialDrive.h>
@@ -57,6 +58,9 @@ class Robot : public frc::IterativeRobot {
 
   //Gyro Declaration
   AHRS *ahrs;
+
+  //timer declaration
+  frc::Timer m_waitTimer;
 
   //All Motors
 
@@ -135,8 +139,8 @@ class Robot : public frc::IterativeRobot {
 
   //autonomous functions
   void forwardDrive(double feet, double speed);
-  void rightTurn(double turnangleright);
-  void leftTurn(double turnangleleft);
+  void ccwTurn(double turnangleright);
+  void cwTurn(double turnangleleft);
   void brakeRobot();
     
  private:
@@ -170,7 +174,7 @@ class Robot : public frc::IterativeRobot {
   bool intakeUse;
   bool intakebuttonpressed;
 
-  bool indexbuttonpressed;
+  bool indexbutton;
   bool indexup;
   bool reverseindexbutton;
 
@@ -179,6 +183,7 @@ class Robot : public frc::IterativeRobot {
   //Limelight and Autotargeting
   std::shared_ptr<NetworkTable> table = nt::NetworkTableInstance::GetDefault().GetTable("limelight"); 
   double steeringAdjust;
+  double tx;
   double kF;
   double tP;
   double ty;
@@ -186,8 +191,22 @@ class Robot : public frc::IterativeRobot {
   bool nullTarget;
   double tCorrection;
   double targetDist;
+  bool targeting;
   double distright;
   double distleft;
+  double povsetpoints;
 
   bool intakeup = true;
+
+  //autonomous bools
+  bool driveForward;
+  bool turnRight;
+  bool turnLeft;
+  bool targetAuto;
+  bool autoShoot;
+  int autocounter;
+  double initautoangle;
+  bool recenterbot;
+  bool autointakedown;
+
 };
