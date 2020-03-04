@@ -6,31 +6,74 @@
 frc::DigitalInput firstSwitch{0};
 frc::DigitalInput secondSwitch{1};
 frc::DigitalInput thirdSwitch{2};
+//distance sensor
+frc::AnalogInput index1{3};
+frc::AnalogInput index2{2};
 //Limit Switch bools
 bool motorOn = 0;
-double ballCounter = 0;
+int ballCounter = 0;
 bool firstdisabled = 0;
 bool seconddisabled = 0;
 bool thirddisabled = 0;
 //declaring victor variable
 VictorSPX vspx = /*device ID*/{8};
 
-void indexing()
+void indexing(bool auotonomous)
 {
   //victor motor movement
   //vspx.Set(ControlMode::PercentOutput, .8);
     
-  bool firstInput = firstSwitch.Get();
-  bool secondInput = secondSwitch.Get();
-  bool thirdInput = thirdSwitch.Get();
+  bool firstInput; //= firstSwitch.Get();
+  bool secondInput; //= secondSwitch.Get();
+  bool thirdInput; //= thirdSwitch.Get();
 
-  printf("firstSwitch %u\n", firstInput);
-  printf("secondSwitch %u\n", secondInput);
-  printf("thirdSwitch %u\n", thirdInput);
+  //Best spacing is 20, but autonomous needs more
+  double spacingval;
+
+  double index1volt = index1.GetVoltage();
+  double index3volt = index2.GetVoltage();
+  //printf("output volts %f \n", index3volt);
+  //printf("output volts %f \n", index2volt);
+  printf("indexing counter %f \n", ballCounter);
+
+
+  if (index1volt < 1.9){
+    firstInput = false;
+  }
+  if (index1volt > 2.4){
+    firstInput = true;
+  }
+
+  if (auotonomous == false){
+    spacingval = 20;
+  }
+  if (auotonomous == true){
+    spacingval = 30;
+  }
+  
+
+  //idexing with 1 sensor
+  if (firstInput == true && firstdisabled == false){
+    vspx.Set(ControlMode::PercentOutput, .5);
+    ballCounter = 1;
+    firstdisabled == true;
+  }
+  if (ballCounter < spacingval && ballCounter != 0){
+    vspx.Set(ControlMode::PercentOutput, .5);
+    ballCounter ++;
+  }
+  if (ballCounter == spacingval){
+    ballCounter = 0;
+    vspx.Set(ControlMode::PercentOutput, 0);
+    firstdisabled = false;
+  }
+
+  // printf("firstSwitch %u\n", firstInput);
+  // printf("secondSwitch %u\n", secondInput);
+  // printf("thirdSwitch %u\n", thirdInput);
   //first switch on
-  if (firstInput == 1 && firstdisabled == 0)
+  /*if (firstInput == 1 && firstdisabled == 0)
   {
-    
     motorOn = 1;
     firstdisabled = 1;
   }
@@ -80,5 +123,7 @@ void indexing()
   }
 
   frc::SmartDashboard::PutNumber("ballCounter", ballCounter);
+  */
+
 
 }

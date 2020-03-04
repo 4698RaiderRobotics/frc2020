@@ -11,6 +11,7 @@
 #include <frc/IterativeRobot.h>
 #include <frc/SpeedControllerGroup.h>
 #include <frc/XboxController.h>
+#include <frc/GenericHID.h>
 #include <frc/Joystick.h>
 #include <frc/DriverStation.h>
 #include <frc/smartdashboard/SendableChooser.h>
@@ -33,6 +34,7 @@
 #include <wpi/math>
 #include <iostream>
 #include <frc/util/color.h>
+#include <frc/AnalogInput.h>
 #include <cameraserver/CameraServer.h>
 #include "rev/ColorSensorV3.h"
 #include "rev/ColorMatch.h"
@@ -61,6 +63,9 @@ class Robot : public frc::IterativeRobot {
 
   //timer declaration
   frc::Timer m_waitTimer;
+
+  //distance sensor
+  frc::AnalogInput index1{3};
 
   //All Motors
 
@@ -116,8 +121,11 @@ class Robot : public frc::IterativeRobot {
   //frc::Rotation2d gyroAngle{units::degree_t(-m_gyro.GetAngle())};
 
   //Limit Switches
-  frc::DigitalInput firstSwitch{0};
-  frc::DigitalInput secondSwitch{1};
+  //climber left
+  frc::DigitalInput climberLeftSwitch{0};
+  //climber right
+  frc::DigitalInput climberRightSwitch{1};
+  
   frc::DigitalInput thirdSwitch{2};
 
 
@@ -139,6 +147,7 @@ class Robot : public frc::IterativeRobot {
 
   //autonomous functions
   void forwardDrive(double feet, double speed);
+  void backwardDrive(double feet, double speed);
   void ccwTurn(double turnangleright);
   void cwTurn(double turnangleleft);
   void brakeRobot();
@@ -160,6 +169,11 @@ class Robot : public frc::IterativeRobot {
   bool throttle; 
   double throttleMultiplier;
 
+  bool enableclimb;
+  bool climbmode;
+  double leftclimbinput;
+  double rightclimbinput;
+
   bool shiftbuttonpressed;
   bool shiftup;
 
@@ -168,6 +182,7 @@ class Robot : public frc::IterativeRobot {
 
   //Operater Controls
   bool shooterThrottle;
+  bool shooterspit;
   bool moveBall;
 
 
@@ -177,8 +192,13 @@ class Robot : public frc::IterativeRobot {
   bool indexbutton;
   bool indexup;
   bool reverseindexbutton;
+  bool indextoggle;
+  bool indexauto;
 
   double intakeBall;
+
+  double index3volt;
+  bool thirdInput;
 
   //Limelight and Autotargeting
   std::shared_ptr<NetworkTable> table = nt::NetworkTableInstance::GetDefault().GetTable("limelight"); 
@@ -203,10 +223,20 @@ class Robot : public frc::IterativeRobot {
   bool turnRight;
   bool turnLeft;
   bool targetAuto;
+  bool targetAuto2;
   bool autoShoot;
+  bool autoShoot2;
   int autocounter;
   double initautoangle;
   bool recenterbot;
   bool autointakedown;
+  bool driveForward2;
+  bool driveBackward;
+  bool autointakeup;
+  bool shiftGear;
+  bool shiftuponce;
 
+  //Climber
+  bool climberLeftInput;
+  bool climberRightInput;
 };

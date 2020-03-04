@@ -12,11 +12,13 @@
 
 void Robot::RobotInit()
 {
+
   nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("camMode",0);
   nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("ledMode",0);
 
   cs::UsbCamera camera = frc::CameraServer::GetInstance()->StartAutomaticCapture();
-  camera.SetResolution(160,120);
+  camera.SetResolution(120,90);
+  camera.SetFPS(10);
 
   //drive motors
   m_leftMotor1Lead.RestoreFactoryDefaults();
@@ -34,8 +36,7 @@ void Robot::RobotInit()
   vspx.ConfigFactoryDefault();
   tsrx1.ConfigFactoryDefault();
   tsrx2.ConfigFactoryDefault();
-
-  tsrx2.Follow(tsrx1);
+  tsrx2.SetInverted(true);
 
   shift = new frc::DoubleSolenoid(5 , 2);
   boost = new frc::DoubleSolenoid(6 , 1);
@@ -47,6 +48,10 @@ void Robot::RobotInit()
   m_shooterMotor.Follow(m_testMotor, true);
   m_testMotor.SetInverted(true);
 
+  //climber
+  climberLeftInput = climberLeftSwitch.Get();
+  climberRightInput = climberRightSwitch.Get();
+ 
   // set test PID coefficients
   m_testpidController.SetP(testkP);
   m_testpidController.SetI(testkI * 1e-6);
@@ -183,78 +188,127 @@ void Robot::AutonomousInit()
 {
   m_encoderright.SetPosition(0);
   m_encoderleft.SetPosition(0);
-  boost->Set(frc::DoubleSolenoid::kReverse);
-  table->PutNumber("pipeline", 4);
   ahrs->Reset();
+  boost->Set(frc::DoubleSolenoid::kReverse);
+  shift->Set(frc::DoubleSolenoid::kForward);
+  table->PutNumber("pipeline", 4);
   driveForward = false;
+  driveForward2 = false;
+  driveBackward = false;
   turnLeft = false;
   turnRight = false;
   targetAuto = true;
+  targetAuto2 = false;
   autoShoot = false;
+  autoShoot2 = false;
   recenterbot = false;
   autointakedown = false;
-  autocounter = 0;
-  }
+  shiftGear = false;
+  shiftuponce = true;
+}
 void Robot::AutonomousPeriodic()
 {
   double gyroAngle = ahrs->GetAngle();
   frc::SmartDashboard::PutNumber("anglething", gyroAngle);
+  indexing(true);
   if (targetAuto){
       tCorrection = AutoTargetTurn();
       m_robotDrive.ArcadeDrive(0 , tCorrection);
       printf("tCorrection %f \n", tCorrection);
       printf("targeting \n");
-      if (abs(tx) < 1.0 && tx != 0){
+      if (abs(tx) < 0.5 && tx != 0){
         targetAuto = false;
         autoShoot = true;
       }
   }
   if (autoShoot){
-    if (autocounter < 300){
+    if (autocounter < 175){
       autocounter ++;
-      printf("counter %d \n", autocounter);
-      testPIDcontroller(&operater, true);
-      if (autocounter > 100){
+      //printf("counter %d \n", autocounter);
+      testPIDcontroller(&operater, true, targetDist);
+      if (autocounter > 50){
         vspx.Set(ControlMode::PercentOutput, .7);
       }
     }
-    if (autocounter == 300){
-      testPIDcontroller(&operater, false);
+    if (autocounter == 175){
+      testPIDcontroller(&operater, false, targetDist);
       vspx.Set(ControlMode::PercentOutput, 0);
+      autocounter = 0;
       autoShoot = false;
       recenterbot = true;
     }
   }
   if (recenterbot){
     if (gyroAngle < -1.0){
-      m_robotDrive.ArcadeDrive(0, .3);
+      m_robotDrive.ArcadeDrive(0, .4);
     }
     else if (gyroAngle > 1.0){
-      m_robotDrive.ArcadeDrive(0, -.3);
+      m_robotDrive.ArcadeDrive(0, -.4);
     }
     else {
+      m_robotDrive.ArcadeDrive(0 , 0);
       recenterbot = false;
-      turnLeft= true;
+      driveForward = true;
     }
   }
-  if(turnLeft){
-    ccwTurn(40);
-    turnLeft = false;
-    driveForward = true;
-  }
+  // if(turnLeft){
+  //   ccwTurn(40);
+  //   turnLeft = false;
+  //   driveForward = true;
+  // }
   if(driveForward){
-    forwardDrive(11, 0.7);
-    driveForward = false;
-    autointakedown = true;
+    forwardDrive(9.94444, 0.7);
+    if (shiftuponce){
+      shift->Set(frc::DoubleSolenoid::kReverse);
+      shiftuponce = false;
+    }
+    if (9.94444 - abs(m_encoderleft.GetPosition()) <= .1){
+      driveForward = false;
+      driveBackward = true;
+      shift->Set(frc::DoubleSolenoid::kReverse);
+    }
   }
-  if(autointakedown){
+  if(1.94444 - abs(m_encoderleft.GetPosition()) <= .1 && driveForward){
     intake->Set(frc::DoubleSolenoid::kForward);
+    shift->Set(frc::DoubleSolenoid::kForward);
     vspx2.Set(ControlMode::PercentOutput, -.75);
-    vspx.Set(ControlMode::PercentOutput, .5);
-    forwardDrive(1, 0.5);
-    autointakedown = false;
   }
-
+  if(driveBackward){
+    shift->Set(frc::DoubleSolenoid::kReverse);
+    backwardDrive(6, 0.7);
+    if (6 - abs(m_encoderleft.GetPosition()) >= -.1){
+      driveBackward = false;
+      targetAuto2 = true;
+    }
+  }
+  if(abs(m_encoderleft.GetPosition()) <= 3.5 && driveBackward){
+    vspx2.Set(ControlMode::PercentOutput, 0);
+  }
+  if (targetAuto2){
+    tCorrection = AutoTargetTurn();
+    m_robotDrive.ArcadeDrive(0 , tCorrection);
+    printf("tCorrection %f \n", tCorrection);
+    printf("targeting \n");
+    if (abs(tx) < 0.5 && tx != 0){
+      targetAuto2 = false;
+      autoShoot2 = true;
+    }
+  }
+  if (autoShoot2){
+    if (autocounter < 175){
+      autocounter ++;
+      printf("counter %d \n", autocounter);
+      testPIDcontroller(&operater, true, targetDist);
+      if (autocounter > 50){
+        vspx.Set(ControlMode::PercentOutput, .7);
+      }
+    }
+    if (autocounter == 175){
+      testPIDcontroller(&operater, false, targetDist);
+      vspx.Set(ControlMode::PercentOutput, 0);
+      autoShoot2 = false;
+    }
+  }
 }
 void Robot::TeleopInit()
 {
@@ -266,6 +320,7 @@ void Robot::TeleopInit()
   m_robotDrive.ArcadeDrive(0 , 0);
   boost->Set(frc::DoubleSolenoid::kReverse);
   ahrs->Reset();
+  climbmode = false;
 }
 
 void Robot::TeleopPeriodic()
@@ -279,7 +334,6 @@ void Robot::TeleopPeriodic()
   distleft = m_encoderleft.GetPosition();
   frc::SmartDashboard::PutNumber("distright", distright);
   frc::SmartDashboard::PutNumber("distleft", distleft);
-  //indexing();
 
   /*readColorSensor();
   if (position || rotationControl)
@@ -297,6 +351,15 @@ void Robot::TeleopPeriodic()
     initp = true;
   }*/
 
+  index3volt = index2.GetVoltage();
+  if (index3volt < 1.3){
+    thirdInput = false;
+  }
+  if (index3volt > 1.7){
+    thirdInput = true;
+  }
+  frc::SmartDashboard::PutBoolean("Ball", thirdInput);
+
 
   bool holdup = false;
   if(shiftbuttonpressed == true && shiftup == true){
@@ -308,13 +371,14 @@ void Robot::TeleopPeriodic()
   }
   if (shiftbuttonpressed == false){
     if (shiftup == true){
+      //second gear
       shift->Set(frc::DoubleSolenoid::Value::kReverse);
     }
     if (shiftup == false){
+      //first gear
       shift->Set(frc::DoubleSolenoid::Value::kForward);
     }
   }
-
   bool waitaminute = false;
   if(boostbuttonpressed == true && boostup == true){
    boostup = false;
@@ -325,12 +389,32 @@ void Robot::TeleopPeriodic()
   }
   if (boostbuttonpressed == false){
     if (boostup == true){
-      boost->Set(frc::DoubleSolenoid::Value::kReverse);
-    }
-    if (boostup == false){
       boost->Set(frc::DoubleSolenoid::Value::kForward);
     }
+    if (boostup == false){
+      boost->Set(frc::DoubleSolenoid::Value::kReverse);
+    }
   }
+  //driver climb control
+  bool climbwait = false;
+  if(enableclimb == true && climbmode == true){
+   climbmode = false;
+   climbwait = true;
+  }
+  if(enableclimb == true && climbmode == false && climbwait == false){
+    climbmode = true;
+  }
+  if (enableclimb == false){
+    if (climbmode == true){
+      tsrx1.Set(ControlMode::PercentOutput, leftclimbinput);
+      tsrx2.Set(ControlMode::PercentOutput, rightclimbinput);
+    }
+    if (climbmode == false){
+      tsrx1.Set(ControlMode::PercentOutput, 0);
+      tsrx2.Set(ControlMode::PercentOutput, 0);
+    }
+  }
+  frc::SmartDashboard::PutBoolean("climbmode", climbmode);
 
   bool dontcare = false;
   if(intakebuttonpressed == true && intakeup == true){
@@ -349,48 +433,49 @@ void Robot::TeleopPeriodic()
     }
   }
 
-  /*
-  bool indexwait = false;
-  if(indexbuttonpressed == true && indexup == true){
-   indexup = false;
-   indexwait = true;
-  }
-  if(indexbuttonpressed == true && indexup == false && indexwait == false){
-    indexup = true;
-  }
-  if (indexbuttonpressed == false){
-    if (indexup == true){
-      vspx.Set(ControlMode::PercentOutput, .5);
-    }
-    if (indexup == false){
-      vspx.Set(ControlMode::PercentOutput, 0);
-    }
-  }
-  */
-
-  
   //Operator controls
 
   //delivery system forward and reverse
-  if(indexbutton){
-    vspx.Set(ControlMode::PercentOutput, .5);
+  bool waitindex = false;
+  if(indextoggle == true && indexauto == true){
+   indexauto = false;
+   waitindex = true;
   }
-  else if(reverseindexbutton){
-    vspx.Set(ControlMode::PercentOutput, -.5);
+  if(indextoggle == true && indexauto == false && waitindex == false){
+    indexauto = true;
   }
-  else{
-    vspx.Set(ControlMode::PercentOutput, 0);
+  if (indextoggle == false){
+    if (indexauto == true){
+      indexing(false);
+    }
+    if (indexauto == false){
+      if(indexbutton){
+        vspx.Set(ControlMode::PercentOutput, .8);
+      }
+      else if(reverseindexbutton){
+        vspx.Set(ControlMode::PercentOutput, -.5);
+      }
+      else{
+        vspx.Set(ControlMode::PercentOutput, 0);
+      }
+    }
   }
-
+  frc::SmartDashboard::PutBoolean("Auto Index", indexauto);
+  
   //buttons for flywheel
   if (shooterThrottle)
   {
     //use motor speed from limelight to shoot
-    testPIDcontroller(&operater, false);
+    table->PutNumber("pipeline", 4);
+    testPIDcontroller(&operater, false, targetDist);
   }
-  if (!shooterThrottle)
+  else if (shooterspit == 0 || shooterspit == 45 || shooterspit == 315){
+    m_testMotor.Set(-.4);
+  }
+  else
   {
     //stop motors
+    table->PutNumber("pipeline", 0);
     m_testMotor.Set(0);
   }
 
@@ -407,8 +492,6 @@ void Robot::TeleopPeriodic()
   {
     vspx2.Set(ControlMode::PercentOutput, .75);
   }
-
-  //testPIDcontroller(&operater);
   
   
   //Sets shifter to high or low gear
@@ -433,16 +516,15 @@ void Robot::TeleopPeriodic()
   //Turns off Targeting
   if(!autoAlign)
   {
-    table->PutNumber("pipeline", 0);
+    //table->PutNumber("pipeline", 0);
     tCorrection = 0;
   }
   //Makes the throttle button half the output
   //printf("%f \n", povsetpoints);
-  turnMultiplier = .6;
+  turnMultiplier = .65;
   driveMultiplier = .8;
   m_robotDrive.ArcadeDrive(speed * throttleMultiplier * driveMultiplier, (-rotation * throttleMultiplier * turnMultiplier) + tCorrection); //Drive function
 }
-
 void Robot::TestPeriodic() {
 }
 
@@ -457,6 +539,18 @@ void Robot::getInput()
   //throttle = m_driveStick.GetRawButton(1);  //used for halving speed
   throttle = driver.GetRawButton(6); //right bumper throttles speed
 
+  //climb controls Back button must be pressed for joystick to work
+  enableclimb = driver.GetBackButtonPressed();
+  leftclimbinput = driver.GetY(frc::GenericHID::JoystickHand::kLeftHand);
+  rightclimbinput = driver.GetY(frc::GenericHID::JoystickHand::kRightHand);
+
+ if(abs(leftclimbinput) < .15){
+    leftclimbinput = 0;
+  }
+  if(abs(rightclimbinput) < .15){
+    rightclimbinput = 0;
+  }
+
   povsetpoints = operater.GetPOV();
 
   shiftbuttonpressed = driver.GetAButtonPressed(); //shifts up and down
@@ -465,14 +559,16 @@ void Robot::getInput()
   //autoAlign = m_driveStick.GetRawButton(4);
   //nullTarget = m_driveStick.GetRawButton(5);
 
-  autoAlign = driver.GetStartButton();
-  nullTarget = driver.GetXButton();
+  autoAlign = driver.GetXButton();
 
   //test motor
   startbtn = operater.GetStartButton();
 
   //left bumper for operator
   shooterThrottle = operater.GetRawButton(5);
+
+  //spits out balls if stuck
+  shooterspit = operater.GetPOV();
 
   //intake down
   intakebuttonpressed = operater.GetAButtonPressed();
@@ -482,6 +578,8 @@ void Robot::getInput()
 
   //b button
   reverseindexbutton = operater.GetBButton();
+
+  indextoggle = operater.GetYButtonPressed();
   
   //take in ball (axis of left joystick)
   intakeBall = operater.GetY(frc::GenericHID::JoystickHand::kLeftHand);
@@ -495,18 +593,18 @@ double Robot::AutoTargetTurn()
 {
   tx = table->GetNumber("tx", 0.0);
   ty = table->GetNumber("ty", 0.0);
-  targetDist = (5.75 / tan((25.915 + ty) * (wpi::math::pi / 180)));
+  targetDist = (5.6666666/ tan((30.379 + ty) * (wpi::math::pi / 180)));
   frc::SmartDashboard::PutNumber("Distance to Target", targetDist);
   frc::SmartDashboard::PutNumber("tx", tx);
   frc::SmartDashboard::PutNumber("ty", ty);
   double ta = table->GetNumber("ta", 0.0);
   double ts = table->GetNumber("ts", 0.0);
   steeringAdjust = 0.0;
-  if (tx > 1.0)
+  if (tx > 0.5)
   {
     steeringAdjust = tP * tx - kF;
   }
-  else if (tx < -1.0)
+  else if (tx < -0.5)
   {
     steeringAdjust = tP * tx + kF;
   }
@@ -623,7 +721,7 @@ void Robot::forwardDrive(double feet, double speed)
 {
   double initforwardangle = ahrs->GetAngle();
 
-  while(feet - abs(m_encoderleft.GetPosition()) > .1){
+  if (feet - abs(m_encoderleft.GetPosition()) > -.1){
     double forwardangle = ahrs->GetAngle();
     double angleerror = initforwardangle - forwardangle;
     double forwardAdjust = 0;
@@ -642,6 +740,28 @@ void Robot::forwardDrive(double feet, double speed)
     double leftRPM = speed / (((4 * wpi::math::pi) / (12 * 18)) / 60);
     double rightRPM = speed / (((4 * wpi::math::pi) / (12 * 18)) / 60);
     m_robotDrive.ArcadeDrive(speed , forwardAdjust);
+  }
+}
+void Robot::backwardDrive(double feet, double speed)
+{
+  double initbackwardangle = ahrs->GetAngle();
+
+  if (feet - abs(m_encoderleft.GetPosition()) < .1){
+    double backwardangle = ahrs->GetAngle();
+    double angleerror = initbackwardangle - backwardangle;
+    double backwardAdjust = 0;
+    frc::SmartDashboard::PutNumber("distright", m_encoderright.GetPosition());
+    frc::SmartDashboard::PutNumber("distleft", m_encoderleft.GetPosition());
+
+    if (angleerror > 1.0)
+    {
+      backwardAdjust = -0.025 * angleerror;
+    }
+    else if (angleerror < -1.0)
+    {
+      backwardAdjust = 0.025 * angleerror;
+    }
+    m_robotDrive.ArcadeDrive(-speed , backwardAdjust);
   }
 }
 void Robot::cwTurn(double turnangleleft)
