@@ -8,11 +8,11 @@ rev::CANSparkMax m_testMotor{5, rev::CANSparkMax::MotorType::kBrushless};
 rev::CANPIDController m_testpidController = m_testMotor.GetPIDController();
 rev::CANEncoder m_testEncoder = m_testMotor.GetEncoder();
 double testkP = 0.000300, testkI = 1, testkD = 0, testkIz = 0, testkFF = 0.000040, testkMaxOutput = .85, testkMinOutput = -.85;
-std::shared_ptr<NetworkTable> table = nt::NetworkTableInstance::GetDefault().GetTable("limelight"); 
+std::shared_ptr<NetworkTable> table = nt::NetworkTableInstance::GetDefault().GetTable("limelight");
 double testSetPoint = 0;
 bool shootready;
 
-void testPIDcontroller(frc::XboxController * shooteroperater,  bool autoShoot, double targetdist)
+void testPIDcontroller(frc::XboxController *shooteroperater, bool autoShoot, double targetdist)
 {
     //test motor PID
     double testMaxRPM = 5700;
@@ -28,7 +28,8 @@ void testPIDcontroller(frc::XboxController * shooteroperater,  bool autoShoot, d
 
     //using targetDist
     double ty = table->GetNumber("ty", 0.0);
-    double targetDist = (5.6666666/ tan((30.379 + ty) * (wpi::math::pi / 180)));
+    double targetDist = (5.6666666 / tan((30.379 + ty) * (wpi::math::pi / 180)));
+    printf("%f", targetDist);
     //double targetdistrpm = ((targetdist * 26.229) + 2514.978) + 25;
     //other dist to rpm equations
     //General with slant and straight
@@ -74,9 +75,16 @@ void testPIDcontroller(frc::XboxController * shooteroperater,  bool autoShoot, d
         testkMinOutput = testmin;
         testkMaxOutput = testmax;
     }
-    if(autodist || autoShoot){
+    if (autodist || autoShoot)
+    {
         testSetPoint = targetdistrpm;
         printf("autorpm %f \n", targetdistrpm);
+    }
+    else if(povsetpoint <= 135 && povsetpoint != -1){
+        testSetPoint = 2850;
+    }
+    else if(povsetpoint >= 225){
+        testSetPoint = 2000;
     }
     else
     {
@@ -92,28 +100,30 @@ void testPIDcontroller(frc::XboxController * shooteroperater,  bool autoShoot, d
         {
             testiz = 0;
         }
-    //data collection
-    // printf("backbutton %u \n", setpointzero);
-    // if (setpointup >= .1){
-    //     testSetPoint = testSetPoint + 10;
-    // }
-    // if (setpointdown >= .1){
-    //     testSetPoint = testSetPoint - 10;
-    // }
-    // if (setpointzero){
-    //     testSetPoint = 0;
-    // }
-    //     if(testSetPoint == 0){
-    //         m_testMotor.Set(0);
-    //     }
-    //     else{
+        //data collection
+        // printf("backbutton %u \n", setpointzero);
+        // if (setpointup >= .1){
+        //     testSetPoint = testSetPoint + 10;
+        // }
+        // if (setpointdown >= .1){
+        //     testSetPoint = testSetPoint - 10;
+        // }
+        // if (setpointzero){
+        //     testSetPoint = 0;
+        // }
+        //     if(testSetPoint == 0){
+        //         m_testMotor.Set(0);
+        //     }
+        //     else{
         m_testpidController.SetIZone(testiz);
         m_testpidController.SetReference(-testSetPoint, rev::ControlType::kVelocity);
     }
-    if (abs(testSetPoint + m_testEncoder.GetVelocity()) < 200){
+    if (abs(testSetPoint + m_testEncoder.GetVelocity()) < 200)
+    {
         shootready = true;
     }
-    else{
+    else
+    {
         shootready = false;
     }
     frc::SmartDashboard::PutBoolean("shoot ready", shootready);

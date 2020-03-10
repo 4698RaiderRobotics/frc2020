@@ -11,21 +11,22 @@ frc::AnalogInput index1{3};
 frc::AnalogInput index2{2};
 //Limit Switch bools
 bool motorOn = 0;
+int timerVar = 0;
 int ballCounter = 0;
 bool firstdisabled = 0;
 bool seconddisabled = 0;
 bool thirddisabled = 0;
 //declaring victor variable
-VictorSPX vspx = /*device ID*/{8};
+VictorSPX vspx = /*device ID*/ {8};
 
 void indexing(bool auotonomous)
 {
   //victor motor movement
   //vspx.Set(ControlMode::PercentOutput, .8);
-    
-  bool firstInput; //= firstSwitch.Get();
+
+  bool firstInput;  //= firstSwitch.Get();
   bool secondInput; //= secondSwitch.Get();
-  bool thirdInput; //= thirdSwitch.Get();
+  bool thirdInput;  //= thirdSwitch.Get();
 
   //Best spacing is 20, but autonomous needs more
   double spacingval;
@@ -36,38 +37,69 @@ void indexing(bool auotonomous)
   //printf("output volts %f \n", index2volt);
   printf("indexing counter %f \n", ballCounter);
 
-
-  if (index1volt < 1.9){
+  if (index1volt < 1.9)
+  {
     firstInput = false;
   }
-  if (index1volt > 2.4){
+  if (index1volt > 2.4)
+  {
     firstInput = true;
   }
+  printf("index volt %f \n", index1volt);
 
-  if (auotonomous == false){
-    spacingval = 20;
+  if (auotonomous == false)
+  {
+    spacingval = 25;
   }
-  if (auotonomous == true){
-    spacingval = 30;
+  if (auotonomous == true)
+  {
+    spacingval = 40;
   }
-  
 
   //idexing with 1 sensor
-  if (firstInput == true && firstdisabled == false){
+  if (firstInput == true && firstdisabled == false)
+  {
     vspx.Set(ControlMode::PercentOutput, .5);
-    ballCounter = 1;
+    timerVar = 1;
     firstdisabled == true;
   }
-  if (ballCounter < spacingval && ballCounter != 0){
+  if (timerVar < spacingval && timerVar != 0)
+  {
     vspx.Set(ControlMode::PercentOutput, .5);
-    ballCounter ++;
+    timerVar++;
   }
-  if (ballCounter == spacingval){
-    ballCounter = 0;
+  if (timerVar == spacingval)
+  {
+    timerVar = 0;
     vspx.Set(ControlMode::PercentOutput, 0);
     firstdisabled = false;
   }
 
+  // //first activated
+  // if (firstInput == 1 && firstdisabled == 0)
+  // {
+  //   firstdisabled = 1;
+  // }
+  // //first disabled
+  // if (firstInput == 0 && firstdisabled == 1)
+  // {
+  //   ballCounter++;
+  //   firstdisabled = 0;
+  // }
+
+  // //third switch on
+  // if (thirdInput == 1 && thirddisabled == 0)
+  // {
+  //   thirddisabled = 1;
+  // }
+
+  // //third disabled
+  // if (thirdInput == 0 && thirddisabled == 1)
+  // {
+  //   ballCounter--;
+  //   thirddisabled = 0;
+  // }
+  // frc::SmartDashboard::PutNumber("ballCounter", ballCounter);
   // printf("firstSwitch %u\n", firstInput);
   // printf("secondSwitch %u\n", secondInput);
   // printf("thirdSwitch %u\n", thirdInput);
@@ -93,7 +125,6 @@ void indexing(bool auotonomous)
   //third switch on
   if (thirdInput == 1 && thirddisabled == 0)
   {
-    
     thirddisabled = 1;
   }
 
@@ -124,6 +155,4 @@ void indexing(bool auotonomous)
 
   frc::SmartDashboard::PutNumber("ballCounter", ballCounter);
   */
-
-
 }

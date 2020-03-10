@@ -44,8 +44,8 @@
 #include "readColorSensor.h"
 #include "indexing.h"
 
-
-class Robot : public frc::IterativeRobot {
+class Robot : public frc::IterativeRobot
+{
   //frc::Rotation2d gyroAngle{units::degree_t(-m_gyro.GetAngle())};
 
   //Contoller declaration
@@ -85,15 +85,15 @@ class Robot : public frc::IterativeRobot {
   //test motor CAN ID 5
 
   //declaring talon variables
-  TalonSRX tsrx1 = /*device ID*/{6};
-  TalonSRX tsrx2 = /*device ID*/{7};  
+  TalonSRX tsrx1 = /*device ID*/ {6};
+  TalonSRX tsrx2 = /*device ID*/ {7};
 
   //Victor spx CAN ID 8
-  
+
   //color motor CAN ID 9
 
   //Intake Motor
-  VictorSPX vspx2 = /*device ID*/{10};
+  VictorSPX vspx2 = /*device ID*/ {10};
 
   /*
   Current CAN IDs
@@ -125,11 +125,10 @@ class Robot : public frc::IterativeRobot {
   frc::DigitalInput climberLeftSwitch{0};
   //climber right
   frc::DigitalInput climberRightSwitch{1};
-  
+
   frc::DigitalInput thirdSwitch{2};
 
-
- public:
+public:
   void RobotInit() override;
   void RobotPeriodic() override;
   void AutonomousInit() override;
@@ -151,22 +150,28 @@ class Robot : public frc::IterativeRobot {
   void ccwTurn(double turnangleright);
   void cwTurn(double turnangleleft);
   void brakeRobot();
-    
- private:
+
+  //Autonomous Routines
+  void autoroutine1(); // 6 ball auto along the wall
+  void autoroutine2(); //3 ball auto from anywhere with target in limelight view ends
+                       //about 3 feet behind the initiation line
+  void autoroutine3(); //3 ball shoot gvoes forward off initiation line
+
+private:
   frc::SendableChooser<std::string> m_chooser;
   const std::string kAutoNameDefault = "Default";
   const std::string kAutoNameCustom = "My Auto";
-  
+
   frc2::PIDController pid{1.0, 0.0, 0.0};
 
   //Driver Controls
-  double rotation; 
+  double rotation;
   double speed;
   double RT;
   double LT;
   double turnMultiplier;
   double driveMultiplier;
-  bool throttle; 
+  bool throttle;
   double throttleMultiplier;
 
   bool enableclimb;
@@ -185,7 +190,6 @@ class Robot : public frc::IterativeRobot {
   bool shooterspit;
   bool moveBall;
 
-
   bool intakeUse;
   bool intakebuttonpressed;
 
@@ -201,7 +205,7 @@ class Robot : public frc::IterativeRobot {
   bool thirdInput;
 
   //Limelight and Autotargeting
-  std::shared_ptr<NetworkTable> table = nt::NetworkTableInstance::GetDefault().GetTable("limelight"); 
+  std::shared_ptr<NetworkTable> table = nt::NetworkTableInstance::GetDefault().GetTable("limelight");
   double steeringAdjust;
   double tx;
   double kF;
@@ -215,6 +219,7 @@ class Robot : public frc::IterativeRobot {
   double distright;
   double distleft;
   double povsetpoints;
+  int pipeline;
 
   bool intakeup = true;
 
@@ -228,6 +233,7 @@ class Robot : public frc::IterativeRobot {
   bool autoShoot2;
   int autocounter;
   double initautoangle;
+  double gyroAngle;
   bool recenterbot;
   bool autointakedown;
   bool driveForward2;
