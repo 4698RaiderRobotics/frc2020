@@ -181,8 +181,10 @@ private:
 
   bool enableclimb;
   bool climbmode;
-  double leftclimbinput;
-  double rightclimbinput;
+  bool testclimbmotorUp;
+  bool testclimbmotorDown;
+  //double leftclimbinput;
+  //double rightclimbinput;
 
   bool shiftbuttonpressed;
   bool shiftup;

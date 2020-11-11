@@ -317,7 +317,12 @@ void Robot::TeleopPeriodic()
     {
       // tsrx1.Set(ControlMode::PercentOutput, leftclimbinput);
       // tsrx2.Set(ControlMode::PercentOutput, rightclimbinput);
-      climber(&driver);
+      // climb function from climb.h
+      // climber(&driver); 
+      /*if(testclimbmotorUp){
+        m_climbleft.Set()
+      }*/
+
     }
     if (climbmode == false)
     {
@@ -464,9 +469,15 @@ void Robot::getInput()
 
   //climb controls Back button must be pressed for joystick to work
   enableclimb = driver.GetBackButtonPressed();
-  leftclimbinput = driver.GetY(frc::GenericHID::JoystickHand::kLeftHand);
-  rightclimbinput = driver.GetY(frc::GenericHID::JoystickHand::kRightHand);
 
+  // test climb motors 
+  testclimbmotorUp = driver.GetRawButton(5);
+  testclimbmotorDown = driver.GetYButton();
+
+  //leftclimbinput = driver.GetY(frc::GenericHID::JoystickHand::kLeftHand);
+  //rightclimbinput = driver.GetY(frc::GenericHID::JoystickHand::kRightHand);
+
+  /*
   if (abs(leftclimbinput) < .15)
   {
     leftclimbinput = 0;
@@ -475,6 +486,7 @@ void Robot::getInput()
   {
     rightclimbinput = 0;
   }
+  */
 
   povsetpoints = operater.GetPOV();
 
