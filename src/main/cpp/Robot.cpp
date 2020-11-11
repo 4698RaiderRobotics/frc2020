@@ -406,7 +406,6 @@ void Robot::TeleopPeriodic()
   //left stick axis to spin intake (down = ball in, up = ball out, nothing = no motors)
   if (intakeBall > 0.5)
   {
-    printf("intakeBall:%u\n", intakeBall);
     vspx2.Set(ControlMode::PercentOutput, -.75);
   }
   if (intakeBall < 0.5 && intakeBall > -0.5)
@@ -946,7 +945,7 @@ void Robot::autoroutine3()
   }
   if (autoShoot)
   {
-    if (autocounter < 175)
+    if (autocounter < 175) 
     {
       autocounter++;
       //printf("counter %d \n", autocounter);
