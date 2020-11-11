@@ -9,6 +9,7 @@
 //#define DEBUG_SWITCH2
 //#define DEBUG_SWITCH3
 #include "Robot.h"
+#include "climb.h"
 
 void Robot::RobotInit()
 {
@@ -33,11 +34,10 @@ void Robot::RobotInit()
   m_leftMotor3.Follow(m_leftMotor1Lead);
   m_rightMotor12.Follow(m_rightMotor13Lead);
   m_rightMotor14.Follow(m_rightMotor13Lead);
-
-  vspx.ConfigFactoryDefault();
+  
   tsrx1.ConfigFactoryDefault();
-  tsrx2.ConfigFactoryDefault();
-  tsrx2.SetInverted(true);
+  vspx1.ConfigFactoryDefault();
+  vspx2.ConfigFactoryDefault();
 
   shift = new frc::DoubleSolenoid(5, 2);
   boost = new frc::DoubleSolenoid(6, 1);
@@ -52,14 +52,6 @@ void Robot::RobotInit()
   //climber
   climberLeftInput = climberLeftSwitch.Get();
   climberRightInput = climberRightSwitch.Get();
-
-  // set test PID coefficients
-  m_testpidController.SetP(testkP);
-  m_testpidController.SetI(testkI * 1e-6);
-  m_testpidController.SetD(testkD);
-  m_testpidController.SetIZone(testkIz);
-  m_testpidController.SetFF(testkFF);
-  m_testpidController.SetOutputRange(testkMinOutput, testkMaxOutput);
 
   // display test PID coefficients on SmartDashboard
   frc::SmartDashboard::PutNumber("test P Gain", testkP);
@@ -115,7 +107,7 @@ void Robot::RobotPeriodic()
   tP = frc::SmartDashboard::GetNumber("tP", -0.025);
   kF = 0.15;
 
-  pipeline = 3;
+  pipeline = 5;
 
   double ts = nt::NetworkTableInstance::GetDefault().GetTable("limelight")->GetNumber("ts", 0.0);
   frc::SmartDashboard::PutNumber("ts", ts);
@@ -323,13 +315,14 @@ void Robot::TeleopPeriodic()
   {
     if (climbmode == true)
     {
-      tsrx1.Set(ControlMode::PercentOutput, leftclimbinput);
-      tsrx2.Set(ControlMode::PercentOutput, rightclimbinput);
+      // tsrx1.Set(ControlMode::PercentOutput, leftclimbinput);
+      // tsrx2.Set(ControlMode::PercentOutput, rightclimbinput);
+      climber(&driver);
     }
     if (climbmode == false)
     {
-      tsrx1.Set(ControlMode::PercentOutput, 0);
-      tsrx2.Set(ControlMode::PercentOutput, 0);
+      // tsrx1.Set(ControlMode::PercentOutput, 0);
+      // tsrx2.Set(ControlMode::PercentOutput, 0);
     }
   }
   frc::SmartDashboard::PutBoolean("climbmode", climbmode);
@@ -379,36 +372,41 @@ void Robot::TeleopPeriodic()
     {
       if (indexbutton)
       {
-        vspx.Set(ControlMode::PercentOutput, .8);
+        vspx1.Set(ControlMode::PercentOutput, -.8);
+        tsrx1.Set(ControlMode::PercentOutput, .8);
       }
       else if (reverseindexbutton)
       {
-        vspx.Set(ControlMode::PercentOutput, -.8);
+        vspx1.Set(ControlMode::PercentOutput, .8);
+        tsrx1.Set(ControlMode::PercentOutput, -.8);
       }
       else
       {
-        vspx.Set(ControlMode::PercentOutput, 0);
+        vspx1.Set(ControlMode::PercentOutput, 0);
+        tsrx1.Set(ControlMode::PercentOutput, 0);
       }
     }
   }
   frc::SmartDashboard::PutBoolean("Auto Index", indexauto);
 
+  testPIDcontroller(&operater, &m_testMotor, false, targetDist);
   //buttons for flywheel
-  if (shooterThrottle)
-  {
-    //use motor speed from limelight to shoot
-    table->PutNumber("pipeline", pipeline);
-    testPIDcontroller(&operater, false, targetDist);
-  }
-  else
-  {
-    //stop motors
-    m_testMotor.Set(0);
-  }
-
+  // if (shooterThrottle)
+  // {
+  //   //use motor speed from limelight to shoot
+  //   table->PutNumber("pipeline", pipeline);
+  //   testPIDcontroller(&operater, &m_testMotor, false, targetDist);
+  // }
+  // else
+  // {
+  //   //stop motors
+  //   m_testMotor.Set(-.1);
+  // }
+  frc::SmartDashboard::PutNumber("current rpm", m_testEncoder.GetVelocity());
   //left stick axis to spin intake (down = ball in, up = ball out, nothing = no motors)
   if (intakeBall > 0.5)
   {
+    printf("intakeBall:%u\n", intakeBall);
     vspx2.Set(ControlMode::PercentOutput, -.75);
   }
   if (intakeBall < 0.5 && intakeBall > -0.5)
@@ -768,16 +766,16 @@ void Robot::autoroutine1()
     {
       autocounter++;
       //printf("counter %d \n", autocounter);
-      testPIDcontroller(&operater, true, targetDist);
+      testPIDcontroller(&operater, &m_testMotor, true, targetDist);
       if (autocounter > 50)
       {
-        vspx.Set(ControlMode::PercentOutput, .7);
+        vspx2.Set(ControlMode::PercentOutput, .7);
       }
     }
     if (autocounter == 175)
     {
-      testPIDcontroller(&operater, false, targetDist);
-      vspx.Set(ControlMode::PercentOutput, 0);
+      testPIDcontroller(&operater, &m_testMotor, false, targetDist);
+      vspx2.Set(ControlMode::PercentOutput, 0);
       autocounter = 0;
       autoShoot = false;
       recenterbot = true;
@@ -854,16 +852,16 @@ void Robot::autoroutine1()
     {
       autocounter++;
       printf("counter %d \n", autocounter);
-      testPIDcontroller(&operater, true, targetDist);
+      testPIDcontroller(&operater, &m_testMotor, true, targetDist);
       if (autocounter > 50)
       {
-        vspx.Set(ControlMode::PercentOutput, .7);
+        vspx2.Set(ControlMode::PercentOutput, .7);
       }
     }
     if (autocounter == 175)
     {
-      testPIDcontroller(&operater, false, targetDist);
-      vspx.Set(ControlMode::PercentOutput, 0);
+      testPIDcontroller(&operater, &m_testMotor, false, targetDist);
+      vspx2.Set(ControlMode::PercentOutput, 0);
       autoShoot2 = false;
     }
   }
@@ -890,16 +888,16 @@ void Robot::autoroutine2()
     {
       autocounter++;
       //printf("counter %d \n", autocounter);
-      testPIDcontroller(&operater, true, targetDist);
+      testPIDcontroller(&operater, &m_testMotor, true, targetDist);
       if (autocounter > 50)
       {
-        vspx.Set(ControlMode::PercentOutput, .7);
+        vspx2.Set(ControlMode::PercentOutput, .7);
       }
     }
     if (autocounter == 175)
     {
-      testPIDcontroller(&operater, false, targetDist);
-      vspx.Set(ControlMode::PercentOutput, 0);
+      testPIDcontroller(&operater, &m_testMotor, false, targetDist);
+      vspx2.Set(ControlMode::PercentOutput, 0);
       autocounter = 0;
       autoShoot = false;
       recenterbot = true;
@@ -952,16 +950,16 @@ void Robot::autoroutine3()
     {
       autocounter++;
       //printf("counter %d \n", autocounter);
-      testPIDcontroller(&operater, true, targetDist);
+      testPIDcontroller(&operater, &m_testMotor, true, targetDist);
       if (autocounter > 50)
       {
-        vspx.Set(ControlMode::PercentOutput, .7);
+        vspx2.Set(ControlMode::PercentOutput, .7);
       }
     }
     if (autocounter == 175)
     {
-      testPIDcontroller(&operater, false, targetDist);
-      vspx.Set(ControlMode::PercentOutput, 0);
+      testPIDcontroller(&operater, &m_testMotor, false, targetDist);
+      vspx2.Set(ControlMode::PercentOutput, 0);
       autocounter = 0;
       autoShoot = false;
       recenterbot = true;
@@ -999,3 +997,7 @@ int main()
   return frc::StartRobot<Robot>();
 }
 #endif
+
+
+
+// thousandth line of code

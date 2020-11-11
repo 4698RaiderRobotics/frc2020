@@ -17,7 +17,9 @@ bool firstdisabled = 0;
 bool seconddisabled = 0;
 bool thirddisabled = 0;
 //declaring victor variable
-VictorSPX vspx = /*device ID*/ {8};
+VictorSPX vspx1 = /*device ID*/ {8};
+//declaring talon variable
+TalonSRX tsrx1 = /*device ID*/ {6};
 
 void indexing(bool auotonomous)
 {
@@ -49,7 +51,7 @@ void indexing(bool auotonomous)
 
   if (auotonomous == false)
   {
-    spacingval = 25;
+    spacingval = 20;
   }
   if (auotonomous == true)
   {
@@ -59,19 +61,22 @@ void indexing(bool auotonomous)
   //idexing with 1 sensor
   if (firstInput == true && firstdisabled == false)
   {
-    vspx.Set(ControlMode::PercentOutput, .5);
+    tsrx1.Set(ControlMode::PercentOutput, .5);
+    vspx1.Set(ControlMode::PercentOutput, -.5);
     timerVar = 1;
     firstdisabled == true;
   }
   if (timerVar < spacingval && timerVar != 0)
   {
-    vspx.Set(ControlMode::PercentOutput, .5);
+    tsrx1.Set(ControlMode::PercentOutput, .5);
+    vspx1.Set(ControlMode::PercentOutput, -.5);
     timerVar++;
   }
   if (timerVar == spacingval)
   {
-    timerVar = 0;
-    vspx.Set(ControlMode::PercentOutput, 0);
+    //timerVar = 0;
+    tsrx1.Set(ControlMode::PercentOutput, 0);
+    vspx1.Set(ControlMode::PercentOutput, 0);
     firstdisabled = false;
   }
 
