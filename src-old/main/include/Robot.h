@@ -111,7 +111,7 @@ class Robot : public frc::IterativeRobot {
   void executeColorSensor();
   void rightPIDcontroller(double rightSetPoint);
   void leftPIDcontroller(double leftSetPoint);
-  void shooterPIDcontroller(double shooterSetPoint);
+  //void shooterPIDcontroller(double shooterSetPoint);
 
   //autonomous functions
   void forwardDrive(double feet, double speed);

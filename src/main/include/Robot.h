@@ -54,7 +54,7 @@ class Robot : public frc::IterativeRobot
   frc::XboxController operater{2};
 
   //Pnuematics Piston Declaration
-  frc::DoubleSolenoid *shift;
+  frc::DoubleSolenoid *shift; 
   frc::DoubleSolenoid *intake;
   frc::DoubleSolenoid *boost;
 
@@ -83,26 +83,31 @@ class Robot : public frc::IterativeRobot
   //Shooter Motors
   rev::CANSparkMax m_shooterMotor{4, rev::CANSparkMax::MotorType::kBrushless};
   //test motor CAN ID 5
+  rev::CANSparkMax m_testMotor{5, rev::CANSparkMax::MotorType::kBrushless};
+  rev::CANEncoder m_testEncoder = m_testMotor.GetEncoder();
 
-  //declaring talon variables
+  //declaring talon variables (one part of two indexing motors)
+  //NEW
   TalonSRX tsrx1 = /*device ID*/ {6};
-  TalonSRX tsrx2 = /*device ID*/ {7};
 
-  //Victor spx CAN ID 8
-
+  //declaring victor variable
+  VictorSPX vspx1 = /*device ID*/ {8};
+  
+  //Victor spx CAN ID 8 (one part of two indexing motors)
+  
   //color motor CAN ID 9
 
-  //Intake Motor
+  //Intake Wheels Motor
   VictorSPX vspx2 = /*device ID*/ {10};
 
   /*
   Current CAN IDs
   left drive motors 1, 2, 3
   shooter motors 4, 5
-  climb motors 6, 7
-  Indexing 8
+  climb motors 15, 16
+  Indexing 6 (talon), 8 (victor)
   Color Wheel 9
-  Intake motor 10
+  Intake wheels motor 10
   right drive motors 12, 13, 14
   */
 
